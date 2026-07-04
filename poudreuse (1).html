@@ -1,0 +1,1464 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Poudreuse ❄ le jeu de conjugaison snowboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --sky-top:#232A5C;
+  --sky-mid:#5D7BC4;
+  --sky-horizon:#F2C4CE;
+  --snow:#F4F8FF;
+  --snow-shade:#C9D8F0;
+  --ink:#1E2447;
+  --coral:#FF5D8F;
+  --coral-dark:#D93A6E;
+  --gold:#FFC63D;
+  --mint:#7FE3C3;
+  --pine:#1F4A3D;
+  --card:#FFFFFF;
+  --card-shadow:0 8px 0 rgba(30,36,71,.14);
+  --radius:22px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  font-family:'Nunito',sans-serif;
+  color:var(--ink);
+  background:linear-gradient(180deg,var(--sky-top) 0%,var(--sky-mid) 55%,var(--sky-horizon) 100%);
+  overflow:hidden;
+  -webkit-user-select:none;user-select:none;
+}
+button{font-family:inherit;cursor:pointer;border:none}
+.screen{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;overflow-y:auto}
+.screen.active{display:flex}
+h1,h2,h3,.display{font-family:'Fredoka',sans-serif}
+
+/* ============ MENU ============ */
+#menu{gap:14px}
+.title-block{text-align:center;margin-bottom:6px}
+.title-block h1{
+  font-size:clamp(52px,9vw,96px);font-weight:700;color:#fff;letter-spacing:2px;
+  text-shadow:0 6px 0 rgba(30,36,71,.35);
+  transform:rotate(-2deg);
+}
+.title-block h1 .flake{display:inline-block;color:var(--gold);animation:spinflake 6s linear infinite}
+@keyframes spinflake{to{transform:rotate(360deg)}}
+.title-block p{color:#EAF0FF;font-weight:700;font-size:clamp(14px,2.2vw,19px);letter-spacing:.5px;margin-top:4px}
+.rider-tag{
+  background:var(--gold);color:var(--ink);font-weight:800;padding:6px 18px;border-radius:999px;
+  font-size:15px;transform:rotate(1.5deg);box-shadow:0 4px 0 rgba(30,36,71,.25);
+}
+.menu-btns{display:flex;flex-direction:column;gap:12px;width:min(340px,88vw);margin-top:10px}
+.big-btn{
+  font-family:'Fredoka',sans-serif;font-weight:600;font-size:22px;padding:16px;
+  border-radius:var(--radius);background:var(--coral);color:#fff;
+  box-shadow:0 6px 0 var(--coral-dark);transition:transform .08s,box-shadow .08s;
+}
+.big-btn:hover{transform:translateY(-2px)}
+.big-btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--coral-dark)}
+.big-btn.secondary{background:#fff;color:var(--ink);box-shadow:0 6px 0 rgba(30,36,71,.22)}
+.big-btn.secondary:active{box-shadow:0 2px 0 rgba(30,36,71,.22)}
+.wallet{display:flex;gap:16px;margin-top:8px;color:#fff;font-weight:800;font-size:17px}
+.wallet span{background:rgba(30,36,71,.35);padding:6px 14px;border-radius:999px}
+
+/* ============ PANELS (mountains / shop / settings / results) ============ */
+.panel{
+  background:var(--card);border-radius:28px;box-shadow:var(--card-shadow);
+  width:min(560px,94vw);max-height:88vh;overflow-y:auto;padding:26px;
+}
+.panel h2{font-size:30px;margin-bottom:4px}
+.panel .sub{color:#6B7399;font-weight:700;margin-bottom:18px}
+.back-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.chip-btn{
+  background:#EEF2FC;color:var(--ink);font-weight:800;padding:8px 16px;border-radius:999px;font-size:15px;
+}
+.chip-btn:hover{background:#E0E7F8}
+.mtn-list{display:flex;flex-direction:column;gap:12px}
+.mtn-card{
+  display:flex;align-items:center;gap:14px;text-align:left;width:100%;
+  background:#F5F8FF;border-radius:18px;padding:14px 16px;border:3px solid transparent;
+  transition:transform .08s;
+}
+.mtn-card:not(.locked):hover{transform:translateX(4px);border-color:var(--coral)}
+.mtn-card.locked{opacity:.55;cursor:not-allowed}
+.mtn-dot{width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;color:#fff;font-family:'Fredoka',sans-serif;font-weight:700}
+.mtn-info h3{font-size:19px}
+.mtn-info p{font-size:13.5px;color:#6B7399;font-weight:700}
+.mtn-info .lock-note{color:var(--coral-dark)}
+.shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+.board-card{background:#F5F8FF;border-radius:18px;padding:14px;text-align:center;border:3px solid transparent}
+.board-card.owned-active{border-color:var(--mint)}
+.board-swatch{height:26px;border-radius:999px;margin:10px 0}
+.board-card h4{font-family:'Fredoka',sans-serif;font-size:16px}
+.board-card button{margin-top:8px;width:100%;padding:8px;border-radius:12px;font-weight:800;background:var(--coral);color:#fff}
+.board-card button.use{background:var(--mint);color:var(--ink)}
+.board-card button:disabled{background:#D9DFF0;color:#8A92B5;cursor:not-allowed}
+.setting-row{display:flex;justify-content:space-between;align-items:center;padding:14px 4px;border-bottom:2px solid #EEF2FC;font-weight:800}
+.setting-row small{display:block;color:#6B7399;font-weight:700}
+.toggle{width:56px;height:32px;border-radius:999px;background:#D9DFF0;position:relative;transition:background .15s;flex-shrink:0}
+.toggle::after{content:'';position:absolute;top:4px;left:4px;width:24px;height:24px;border-radius:50%;background:#fff;transition:left .15s}
+.toggle.on{background:var(--mint)}
+.toggle.on::after{left:28px}
+
+/* ============ GAME ============ */
+#game{padding:0}
+#cv{position:absolute;inset:0;width:100%;height:100%}
+#hud{
+  position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;
+  padding:16px 20px;pointer-events:none;
+}
+.hud-pill{
+  background:rgba(30,36,71,.55);color:#fff;font-weight:800;padding:8px 16px;border-radius:999px;
+  font-size:16px;backdrop-filter:blur(4px);
+}
+#streakPill{transition:transform .15s}
+#streakPill.fire{background:linear-gradient(90deg,#FF8A3D,var(--gold));color:var(--ink);transform:scale(1.12)}
+#prompt-zone{
+  position:absolute;left:50%;bottom:5%;transform:translateX(-50%);
+  width:min(520px,94vw);display:none;flex-direction:column;gap:10px;
+}
+#prompt-zone.active{display:flex}
+.prompt-card{
+  background:var(--card);border-radius:24px;box-shadow:var(--card-shadow);padding:20px 24px;text-align:center;
+}
+.prompt-tense{font-weight:800;color:var(--coral-dark);font-size:14px;letter-spacing:1.5px;text-transform:uppercase}
+.prompt-verb{font-family:'Fredoka',sans-serif;font-size:34px;font-weight:700;margin:2px 0}
+.prompt-eng{color:#6B7399;font-weight:700;font-style:italic;font-size:15px}
+.prompt-person{font-size:24px;font-weight:800;margin-top:8px}
+.prompt-person b{color:var(--coral)}
+#timerbar{height:12px;border-radius:999px;background:rgba(255,255,255,.4);overflow:hidden}
+#timerfill{height:100%;width:100%;border-radius:999px;background:var(--mint);transition:background .2s}
+#timerfill.low{background:var(--coral)}
+.answer-row{display:flex;gap:8px}
+#answer{
+  flex:1;font-family:'Fredoka',sans-serif;font-size:26px;font-weight:600;text-align:center;
+  padding:12px;border-radius:18px;border:4px solid var(--snow-shade);outline:none;color:var(--ink);
+  -webkit-user-select:text;user-select:text;min-width:0;
+}
+#answer:focus{border-color:var(--coral)}
+#goBtn{
+  font-family:'Fredoka',sans-serif;font-size:22px;font-weight:600;padding:0 26px;border-radius:18px;
+  background:var(--coral);color:#fff;box-shadow:0 4px 0 var(--coral-dark);
+}
+#goBtn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--coral-dark)}
+.accent-strip{display:flex;gap:6px;justify-content:center}
+.accent-strip button{
+  font-family:'Fredoka',sans-serif;font-size:20px;font-weight:600;width:44px;height:44px;border-radius:14px;
+  background:rgba(255,255,255,.92);color:var(--ink);box-shadow:0 3px 0 rgba(30,36,71,.2);
+}
+.accent-strip button:active{transform:translateY(2px);box-shadow:none}
+#reveal-card{
+  position:absolute;left:50%;top:34%;transform:translate(-50%,-50%) rotate(-2deg);
+  background:var(--card);border-radius:22px;box-shadow:var(--card-shadow);padding:18px 30px;text-align:center;
+  display:none;
+}
+#reveal-card.show{display:block;animation:pop .25s ease-out}
+#reveal-card .label{font-weight:800;font-size:14px;letter-spacing:1px;color:var(--coral-dark);text-transform:uppercase}
+#reveal-card .answer{font-family:'Fredoka',sans-serif;font-size:36px;font-weight:700}
+@keyframes pop{from{transform:translate(-50%,-50%) rotate(-2deg) scale(.6);opacity:0}}
+#trick-burst{
+  position:absolute;left:50%;top:26%;transform:translate(-50%,-50%);
+  font-family:'Fredoka',sans-serif;font-weight:700;color:#fff;text-align:center;
+  pointer-events:none;display:none;
+}
+#trick-burst.show{display:block;animation:burst .9s ease-out}
+#trick-burst .trick-name{
+  font-size:clamp(38px,7vw,64px);letter-spacing:2px;
+  text-shadow:0 5px 0 rgba(30,36,71,.4);transform:rotate(-4deg);display:block;
+}
+#trick-burst .trick-pts{font-size:24px;color:var(--gold);text-shadow:0 3px 0 rgba(30,36,71,.4)}
+@keyframes burst{
+  0%{transform:translate(-50%,-50%) scale(.3);opacity:0}
+  18%{transform:translate(-50%,-50%) scale(1.15);opacity:1}
+  30%{transform:translate(-50%,-50%) scale(1)}
+  80%{opacity:1}
+  100%{transform:translate(-50%,-62%) scale(1);opacity:0}
+}
+#countdown{
+  position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+  font-family:'Fredoka',sans-serif;font-size:120px;font-weight:700;color:#fff;
+  text-shadow:0 8px 0 rgba(30,36,71,.35);pointer-events:none;
+}
+#countdown.show{display:flex}
+
+/* ============ RESULTS ============ */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
+.stat{background:#F5F8FF;border-radius:16px;padding:12px;text-align:center}
+.stat .v{font-family:'Fredoka',sans-serif;font-size:28px;font-weight:700}
+.stat .k{font-size:13px;font-weight:800;color:#6B7399;text-transform:uppercase;letter-spacing:.5px}
+.review-list{margin:10px 0}
+.review-list h3{font-size:17px;margin-bottom:6px}
+.review-item{
+  background:#FFF1F5;border-radius:12px;padding:8px 14px;font-weight:800;margin-bottom:6px;
+  display:flex;justify-content:space-between;font-size:15px;
+}
+.review-item b{color:var(--coral-dark)}
+.xp-bar{height:14px;border-radius:999px;background:#EEF2FC;overflow:hidden;margin:6px 0 2px}
+.xp-fill{height:100%;background:linear-gradient(90deg,var(--mint),#4EC9A0);border-radius:999px;transition:width .8s ease}
+.xp-note{font-size:13px;font-weight:800;color:#6B7399}
+.unlock-flash{
+  background:var(--gold);border-radius:14px;padding:10px 14px;font-weight:800;text-align:center;
+  margin-top:10px;animation:pop .3s ease-out;
+}
+
+/* ============ JUICE ============ */
+#combo-banner{
+  position:absolute;left:50%;top:14%;transform:translateX(-50%);
+  font-family:'Fredoka',sans-serif;font-weight:700;font-size:clamp(30px,5.5vw,52px);
+  color:#fff;letter-spacing:3px;text-shadow:0 5px 0 rgba(30,36,71,.4);
+  padding:8px 28px;border-radius:999px;display:none;pointer-events:none;white-space:nowrap;
+}
+#combo-banner.show{display:block;animation:comboIn 1.4s ease-out}
+#combo-banner.t1{background:linear-gradient(90deg,#FF8A3D,var(--gold))}
+#combo-banner.t2{background:linear-gradient(90deg,var(--coral),#FF8A3D)}
+#combo-banner.t3{background:linear-gradient(90deg,#8B5CF6,var(--coral),var(--gold));animation:comboIn 1.4s ease-out,hueSpin 1s linear infinite}
+@keyframes comboIn{
+  0%{transform:translateX(-50%) scale(.2) rotate(-8deg);opacity:0}
+  15%{transform:translateX(-50%) scale(1.2) rotate(2deg);opacity:1}
+  28%{transform:translateX(-50%) scale(1) rotate(0)}
+  80%{opacity:1}100%{opacity:0}
+}
+@keyframes hueSpin{to{filter:hue-rotate(360deg)}}
+.prompt-card.golden{
+  background:linear-gradient(135deg,#FFF6DC,#FFE7A8);
+  border:4px solid var(--gold);box-shadow:0 0 30px rgba(255,198,61,.8),var(--card-shadow);
+}
+.golden-tag{
+  display:inline-block;background:var(--gold);color:var(--ink);font-weight:800;font-size:13px;
+  padding:3px 12px;border-radius:999px;letter-spacing:1px;margin-bottom:4px;animation:goldPulse 1s ease-in-out infinite;
+}
+@keyframes goldPulse{50%{transform:scale(1.1)}}
+#recordPill.beaten{background:linear-gradient(90deg,var(--gold),#FF8A3D);color:var(--ink)}
+#coinPill{transition:transform .1s}
+#coinPill.bump{transform:scale(1.25)}
+.chest-zone{margin-top:14px;text-align:center}
+.chest-btn{
+  font-size:64px;background:none;border:none;transition:transform .12s;
+  filter:drop-shadow(0 6px 0 rgba(30,36,71,.25));
+}
+.chest-btn:hover{transform:scale(1.12) rotate(-3deg)}
+.chest-btn.shaking{animation:chestShake .5s ease-in-out}
+@keyframes chestShake{
+  0%,100%{transform:rotate(0)}15%{transform:rotate(-12deg)}30%{transform:rotate(10deg)}
+  45%{transform:rotate(-8deg)}60%{transform:rotate(6deg)}75%{transform:rotate(-3deg)}
+}
+.chest-label{font-weight:800;color:#6B7399;font-size:14px}
+.chest-reveal{
+  font-family:'Fredoka',sans-serif;font-weight:700;font-size:26px;animation:pop .35s ease-out;
+  padding:10px;border-radius:16px;margin-top:6px;
+}
+.rar-commun{color:#6B7399}.rar-rare{color:#4D8DE8}.rar-epique{color:#8B5CF6}
+.rar-legendaire{background:linear-gradient(90deg,#8B5CF6,var(--coral),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent;animation:pop .35s ease-out,hueSpin 1.4s linear infinite}
+.missions-box{
+  width:min(340px,88vw);background:rgba(30,36,71,.35);border-radius:20px;padding:14px 16px;margin-top:6px;
+}
+.missions-box h3{color:#fff;font-size:16px;letter-spacing:1px;margin-bottom:8px}
+.mission{margin-bottom:10px}
+.mission:last-child{margin-bottom:0}
+.mission .m-row{display:flex;justify-content:space-between;color:#EAF0FF;font-weight:800;font-size:13.5px;margin-bottom:4px}
+.mission .m-row .rw{color:var(--gold)}
+.mission .m-bar{height:8px;border-radius:999px;background:rgba(255,255,255,.22);overflow:hidden}
+.mission .m-fill{height:100%;border-radius:999px;background:var(--mint);transition:width .4s}
+.mission.done .m-fill{background:var(--gold)}
+.mission.done .m-row{color:var(--gold)}
+.day-chip{
+  background:linear-gradient(90deg,#FF8A3D,var(--gold));color:var(--ink);font-weight:800;
+  padding:6px 16px;border-radius:999px;font-size:15px;box-shadow:0 4px 0 rgba(30,36,71,.25);
+}
+#toast{
+  position:absolute;left:50%;bottom:24px;transform:translateX(-50%);
+  background:var(--ink);color:#fff;font-weight:800;padding:12px 22px;border-radius:999px;
+  display:none;z-index:50;box-shadow:0 6px 0 rgba(0,0,0,.25);white-space:nowrap;
+}
+#toast.show{display:block;animation:toastIn 2.6s ease-out forwards}
+@keyframes toastIn{
+  0%{transform:translate(-50%,60px);opacity:0}
+  12%{transform:translate(-50%,0);opacity:1}
+  85%{transform:translate(-50%,0);opacity:1}
+  100%{transform:translate(-50%,-10px);opacity:0}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01s !important;transition-duration:.01s !important}
+}
+</style>
+</head>
+<body>
+
+<!-- ================= MENU ================= -->
+<div id="menu" class="screen active">
+  <div class="title-block">
+    <h1>POUDREUSE<span class="flake">❄</span></h1>
+    <p>Conjugue vite. Ride encore plus vite.</p>
+  </div>
+  <div class="rider-tag">🏂 Rider : Leila</div>
+  <div class="menu-btns">
+    <button class="big-btn" onclick="UI.show('mountains')">C'est parti ! 🏔️</button>
+    <button class="big-btn secondary" onclick="UI.show('shop')">Boutique 🛹</button>
+    <button class="big-btn secondary" onclick="UI.show('settings')">Réglages ⚙️</button>
+  </div>
+  <div class="wallet">
+    <span>⭐ <span id="menuXP">0</span> XP</span>
+    <span>🪙 <span id="menuCoins">0</span></span>
+    <span class="day-chip" id="dayChip" style="display:none"></span>
+  </div>
+  <div class="missions-box" id="missionsBox">
+    <h3>🎯 MISSIONS DU JOUR</h3>
+    <div id="missionList"></div>
+  </div>
+</div>
+
+<!-- ================= MOUNTAIN SELECT ================= -->
+<div id="mountains" class="screen">
+  <div class="panel">
+    <div class="back-row">
+      <h2>Choisis ta piste</h2>
+      <button class="chip-btn" onclick="UI.show('menu')">← Retour</button>
+    </div>
+    <p class="sub">Gagne des XP pour débloquer les pistes suivantes.</p>
+    <div class="mtn-list" id="mtnList"></div>
+  </div>
+</div>
+
+<!-- ================= SHOP ================= -->
+<div id="shop" class="screen">
+  <div class="panel">
+    <div class="back-row">
+      <h2>Boutique</h2>
+      <button class="chip-btn" onclick="UI.show('menu')">← Retour</button>
+    </div>
+    <p class="sub">🪙 <span id="shopCoins">0</span> pièces — gagne des pièces en réussissant tes tricks !</p>
+    <div class="shop-grid" id="shopGrid"></div>
+  </div>
+</div>
+
+<!-- ================= SETTINGS ================= -->
+<div id="settings" class="screen">
+  <div class="panel">
+    <div class="back-row">
+      <h2>Réglages</h2>
+      <button class="chip-btn" onclick="UI.show('menu')">← Retour</button>
+    </div>
+    <div class="setting-row">
+      <div>Accents obligatoires<small>Sinon « prefere » compte pour « préfère »</small></div>
+      <button class="toggle" id="tglStrict" onclick="Settings.toggle('strict')" aria-label="Accents obligatoires"></button>
+    </div>
+    <div class="setting-row">
+      <div>Indice en anglais<small>Montre la traduction du verbe</small></div>
+      <button class="toggle on" id="tglHint" onclick="Settings.toggle('hint')" aria-label="Indice en anglais"></button>
+    </div>
+    <div class="setting-row">
+      <div>Sons<small>Bips, chocs et fanfares</small></div>
+      <button class="toggle on" id="tglSound" onclick="Settings.toggle('sound')" aria-label="Sons"></button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= GAME ================= -->
+<div id="game" class="screen">
+  <canvas id="cv"></canvas>
+  <div id="hud">
+    <div style="display:flex;gap:8px">
+      <div class="hud-pill" id="scorePill">0 pts</div>
+      <div class="hud-pill" id="streakPill">🔥 0</div>
+      <div class="hud-pill" id="coinPill">🪙 0</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <div class="hud-pill" id="recordPill">🏆 0</div>
+      <div class="hud-pill" id="jumpPill">Saut 1/10</div>
+      <button class="hud-pill" style="pointer-events:auto" onclick="Game.quit()">✕</button>
+    </div>
+  </div>
+  <div id="combo-banner"></div>
+  <div id="trick-burst"><span class="trick-name"></span><span class="trick-pts"></span></div>
+  <div id="reveal-card"><div class="label">La bonne réponse</div><div class="answer"></div></div>
+  <div id="countdown"></div>
+  <div id="prompt-zone">
+    <div class="prompt-card" id="promptCard">
+      <div class="golden-tag" id="goldenTag" style="display:none">✨ VERBE DORÉ ×3 ✨</div>
+      <div class="prompt-tense" id="pTense">PRÉSENT</div>
+      <div class="prompt-verb" id="pVerb">parler</div>
+      <div class="prompt-eng" id="pEng">to speak</div>
+      <div class="prompt-person">➜ <b id="pPerson">nous</b> ______</div>
+    </div>
+    <div id="timerbar"><div id="timerfill"></div></div>
+    <div class="answer-row">
+      <input id="answer" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="tape ici…">
+      <button id="goBtn" onclick="Game.submit()">GO</button>
+    </div>
+    <div class="accent-strip" id="accentStrip"></div>
+  </div>
+</div>
+
+<!-- ================= RESULTS ================= -->
+<div id="results" class="screen">
+  <div class="panel" style="text-align:center">
+    <h2 id="resTitle">Descente terminée ! 🏁</h2>
+    <p class="sub" id="resSub"></p>
+    <div class="stat-grid">
+      <div class="stat"><div class="v" id="resScore">0</div><div class="k">Points</div></div>
+      <div class="stat"><div class="v" id="resAcc">0%</div><div class="k">Précision</div></div>
+      <div class="stat"><div class="v" id="resBest">—</div><div class="k">Meilleur trick</div></div>
+      <div class="stat"><div class="v" id="resCoins">+0 🪙</div><div class="k">Pièces</div></div>
+    </div>
+    <div style="text-align:left">
+      <div class="xp-note"><span id="resXPnote"></span></div>
+      <div class="xp-bar"><div class="xp-fill" id="resXPfill" style="width:0%"></div></div>
+    </div>
+    <div class="review-list" id="reviewList" style="text-align:left"></div>
+    <div id="unlockFlash"></div>
+    <div class="chest-zone" id="chestZone" style="display:none">
+      <div class="chest-label">Descente réussie — tu as gagné un coffre !</div>
+      <button class="chest-btn" id="chestBtn" onclick="Game.openChest()">🎁</button>
+      <div id="chestReveal"></div>
+    </div>
+    <div class="menu-btns" style="width:100%;margin-top:16px">
+      <button class="big-btn" onclick="Game.replay()">Encore ! 🔁</button>
+      <button class="big-btn secondary" onclick="UI.show('mountains')">Autre piste 🏔️</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+'use strict';
+/* =====================================================================
+   POUDREUSE — snowboarding French conjugation game
+   Single-file, no dependencies. Built by Leo for Leila. ❄
+===================================================================== */
+
+/* ---------------- Storage (works when deployed; silently falls back
+   to in-memory when localStorage is unavailable, e.g. sandboxed) --- */
+const Store = (() => {
+  let mem = {};
+  const KEY = 'poudreuse_save_v1';
+  function load(){
+    try{ const raw = localStorage.getItem(KEY); if(raw) mem = JSON.parse(raw); }catch(e){}
+    return mem;
+  }
+  function save(data){
+    mem = data;
+    try{ localStorage.setItem(KEY, JSON.stringify(data)); }catch(e){}
+  }
+  return { load, save };
+})();
+
+/* ---------------- Player state ---------------- */
+const P = Object.assign({
+  xp: 0, coins: 0,
+  ownedBoards: ['flamant'], activeBoard: 'flamant',
+  weights: {},           // "verb|tense|person" -> miss weight
+  best: {},              // mountainId -> best score
+  day: { last: '', streak: 0 },
+  missions: { date: '', prog: {}, done: {} },
+  settings: { strict:false, hint:true, sound:true },
+}, Store.load());
+function persist(){ Store.save(P); }
+
+/* ---------------- Verb engine ---------------- */
+const PRESENT_ER = ['e','es','e','ons','ez','ent'];
+const PRESENT_IR = ['is','is','it','issons','issez','issent'];
+const PRESENT_RE = ['s','s','','ons','ez','ent'];
+const FUTUR_END  = ['ai','as','a','ons','ez','ont'];
+const IMP_END    = ['ais','ais','ait','ions','iez','aient'];
+
+const VERBS = {
+  // regular -er
+  parler:{g:'er',eng:'to speak'}, jouer:{g:'er',eng:'to play'}, aimer:{g:'er',eng:'to like / love'},
+  regarder:{g:'er',eng:'to watch'}, écouter:{g:'er',eng:'to listen'}, manger:{g:'er',eng:'to eat'},
+  skier:{g:'er',eng:'to ski'}, danser:{g:'er',eng:'to dance'}, chanter:{g:'er',eng:'to sing'},
+  tomber:{g:'er',eng:'to fall'}, glisser:{g:'er',eng:'to slide'}, sauter:{g:'er',eng:'to jump'},
+  // regular -ir
+  finir:{g:'ir',eng:'to finish'}, choisir:{g:'ir',eng:'to choose'},
+  grandir:{g:'ir',eng:'to grow up'}, réussir:{g:'ir',eng:'to succeed'},
+  // regular -re
+  vendre:{g:'re',eng:'to sell'}, attendre:{g:'re',eng:'to wait'},
+  perdre:{g:'re',eng:'to lose'}, entendre:{g:'re',eng:'to hear'},
+  // irregulars
+  'être':{g:'irr',eng:'to be',
+    présent:['suis','es','est','sommes','êtes','sont'], futurStem:'ser', impStem:'ét'},
+  avoir:{g:'irr',eng:'to have',
+    présent:['ai','as','a','avons','avez','ont'], futurStem:'aur', impStem:'av'},
+  aller:{g:'irr',eng:'to go',
+    présent:['vais','vas','va','allons','allez','vont'], futurStem:'ir', impStem:'all'},
+  faire:{g:'irr',eng:'to do / make',
+    présent:['fais','fais','fait','faisons','faites','font'], futurStem:'fer', impStem:'fais'},
+};
+
+function conjugate(inf, tense, i){
+  const v = VERBS[inf];
+  if(tense === 'présent'){
+    if(v.g === 'irr') return v['présent'][i];
+    const stem = inf.slice(0,-2);
+    if(v.g === 'er'){
+      // -ger spelling change: nous mangeons
+      if(i === 3 && stem.endsWith('g')) return stem + 'eons';
+      return stem + PRESENT_ER[i];
+    }
+    if(v.g === 'ir') return stem + PRESENT_IR[i];
+    return stem + PRESENT_RE[i];
+  }
+  if(tense === 'futur'){
+    const stem = v.g === 'irr' ? v.futurStem
+               : v.g === 're'  ? inf.slice(0,-1)   // vendre -> vendr
+               : inf;                              // parler -> parler, finir -> finir
+    return stem + FUTUR_END[i];
+  }
+  if(tense === 'imparfait'){
+    let stem;
+    if(v.g === 'irr') stem = v.impStem;
+    else if(v.g === 'er'){
+      stem = inf.slice(0,-2);
+      // -ger: mange+ais / mange+aient, but mang+ions / mang+iez
+      if(stem.endsWith('g') && (i < 3 || i === 5)) stem += 'e';
+    }
+    else if(v.g === 'ir') stem = inf.slice(0,-2) + 'iss';
+    else stem = inf.slice(0,-2);
+    return stem + IMP_END[i];
+  }
+}
+
+const PRONOUNS = [
+  ['je'], ['tu'], ['il','elle','on'], ['nous'], ['vous'], ['ils','elles']
+];
+function pickPronoun(i){ const opts = PRONOUNS[i]; return opts[Math.floor(Math.random()*opts.length)]; }
+function displayPronoun(pr, form){
+  if(pr === 'je' && /^[aeiouéèêh]/i.test(form)) return "j'";
+  return pr;
+}
+
+/* ---------------- Mountains (levels) ---------------- */
+const TIER = {
+  er: ['parler','jouer','aimer','regarder','écouter','manger','skier','danser','chanter','tomber','glisser','sauter'],
+  irre: ['finir','choisir','grandir','réussir','vendre','attendre','perdre','entendre'],
+  irr: ['être','avoir','aller','faire'],
+};
+TIER.all = TIER.er.concat(TIER.irre, TIER.irr);
+
+const MOUNTAINS = [
+  {id:0, icon:'🟢', color:'#4EC9A0', name:'Piste Lapin',   desc:'Verbes en -er · présent',            verbs:TIER.er,  tenses:['présent'], clock:11, xpReq:0},
+  {id:1, icon:'🔵', color:'#4D8DE8', name:'Piste Bleue',   desc:'Verbes en -ir et -re · présent',      verbs:TIER.irre, tenses:['présent'], clock:10, xpReq:80},
+  {id:2, icon:'🔴', color:'#E8564D', name:'Piste Rouge',   desc:'être · avoir · aller · faire',        verbs:TIER.irr, tenses:['présent'], clock:9,  xpReq:200},
+  {id:3, icon:'⚫', color:'#2B3050', name:'Piste Noire',   desc:'Tous les verbes · présent · rapide !', verbs:TIER.all, tenses:['présent'], clock:6,  xpReq:380},
+  {id:4, icon:'🌲', color:'#1F4A3D', name:'Hors-Piste',    desc:'Tous les verbes · FUTUR',             verbs:TIER.all, tenses:['futur'],   clock:9,  xpReq:600},
+  {id:5, icon:'🏅', color:'#E8A02E', name:'JO 2030',       desc:'Tout mélangé · présent + futur + imparfait', verbs:TIER.all, tenses:['présent','futur','imparfait'], clock:6, xpReq:900},
+];
+
+/* ---------------- Boards (shop) ---------------- */
+const BOARDS = {
+  flamant:{name:'Flamant', price:0,   c1:'#FF5D8F', c2:'#FFB3CC'},
+  glacier:{name:'Glacier', price:50,  c1:'#6FD8F2', c2:'#CFF4FD'},
+  menthe: {name:'Menthe',  price:75,  c1:'#7FE3C3', c2:'#D2F8EA'},
+  nuit:   {name:'Nuit Étoilée', price:120, c1:'#2B3050', c2:'#7B84C4', stars:true},
+  or:     {name:'Or Olympique', price:200, c1:'#FFC63D', c2:'#FFE7A8'},
+};
+
+/* ---------------- Sound (procedural Web Audio) ---------------- */
+const Sfx = (() => {
+  let ctx = null;
+  function ac(){ if(!ctx){ try{ ctx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } return ctx; }
+  function tone(freq, dur, type, vol, when){
+    const a = ac(); if(!a || !P.settings.sound) return;
+    const t = a.currentTime + (when||0);
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = type||'sine'; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol||.15, t);
+    g.gain.exponentialRampToValueAtTime(.001, t + dur);
+    o.connect(g).connect(a.destination);
+    o.start(t); o.stop(t + dur + .02);
+  }
+  function noise(dur, vol){
+    const a = ac(); if(!a || !P.settings.sound) return;
+    const b = a.createBuffer(1, a.sampleRate*dur, a.sampleRate);
+    const d = b.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i] = (Math.random()*2-1) * (1 - i/d.length);
+    const s = a.createBufferSource(); s.buffer = b;
+    const g = a.createGain(); g.gain.value = vol||.2;
+    const f = a.createBiquadFilter(); f.type='lowpass'; f.frequency.value = 900;
+    s.connect(f).connect(g).connect(a.destination); s.start();
+  }
+  return {
+    land(spins, streak){
+      const p = Math.pow(2, Math.min(streak||0, 10)/12);   // rising pitch per combo
+      tone(523*p,.12,'triangle',.18); tone(659*p,.12,'triangle',.16,.09); tone(784*p,.2,'triangle',.16,.18);
+      if(spins === 2) tone(1047*p,.3,'triangle',.18,.27);
+    },
+    coin(n){ tone(1319*Math.pow(2,(n%5)/12),.08,'square',.07); },
+    wipe(){ noise(.45,.3); tone(140,.35,'sawtooth',.12); },
+    miss(){ tone(330,.18,'triangle',.14); tone(262,.22,'triangle',.13,.14); tone(196,.35,'triangle',.12,.3); },
+    tick(){ tone(880,.05,'square',.05); },
+    fire(){ [523,659,784,1047,1319].forEach((f,i)=>tone(f,.1,'square',.09,i*.06)); },
+    tierUp(t){
+      const base = [1,1.25,1.5][t-1] || 1;
+      [523,659,784,1047,1319,1568].forEach((f,i)=>tone(f*base,.12,'square',.1,i*.05));
+      tone(2093*base,.4,'triangle',.14,.32);
+    },
+    golden(){ [1568,1976,2349].forEach((f,i)=>tone(f,.14,'sine',.12,i*.07)); },
+    chestShake(){ noise(.08,.15); tone(220,.08,'square',.08); },
+    chestOpen(rar){
+      const runs = {commun:[523,659], rare:[523,659,784,1047],
+                    epique:[523,659,784,1047,1319,1568], legendaire:[523,659,784,1047,1319,1568,2093,2637]};
+      (runs[rar]||runs.commun).forEach((f,i)=>tone(f,.15,'triangle',.15,i*.09));
+    },
+    record(){ [784,988,1175,1568].forEach((f,i)=>tone(f,.2,'triangle',.16,i*.11)); tone(2093,.6,'triangle',.16,.5); },
+    click(){ tone(660,.06,'sine',.1); },
+    fanfare(){ [392,523,659,784].forEach((f,i)=>tone(f,.22,'triangle',.16,i*.13)); tone(1047,.5,'triangle',.18,.55); },
+    unlock(){ ac() && P.settings.sound && ctx.resume && ctx.resume(); },
+  };
+})();
+
+/* ---------------- UI helpers ---------------- */
+const UI = {
+  show(id){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    if(id === 'menu') UI.refreshMenu();
+    if(id === 'mountains') UI.buildMountains();
+    if(id === 'shop') UI.buildShop();
+    Sfx.click(); Sfx.unlock();
+  },
+  refreshMenu(){
+    document.getElementById('menuXP').textContent = P.xp;
+    document.getElementById('menuCoins').textContent = P.coins;
+    const chip = document.getElementById('dayChip');
+    const ds = Daily.streak();
+    if(ds > 0){
+      chip.style.display = '';
+      chip.textContent = `🔥 Jour ${ds}` + (ds > 1 ? ` · +${Math.round((Daily.mult()-1)*100)}% 🪙` : '');
+    } else chip.style.display = 'none';
+    Missions.render();
+  },
+  buildMountains(){
+    const box = document.getElementById('mtnList'); box.innerHTML = '';
+    MOUNTAINS.forEach(m => {
+      const locked = P.xp < m.xpReq;
+      const card = document.createElement('button');
+      card.className = 'mtn-card' + (locked ? ' locked' : '');
+      card.innerHTML = `
+        <div class="mtn-dot" style="background:${m.color}">${m.icon}</div>
+        <div class="mtn-info">
+          <h3>${m.name}</h3>
+          <p>${m.desc}</p>
+          ${locked ? `<p class="lock-note">🔒 Débloque à ${m.xpReq} XP (il te manque ${m.xpReq - P.xp})</p>` : ''}
+        </div>`;
+      if(!locked) card.onclick = () => Game.start(m.id);
+      box.appendChild(card);
+    });
+  },
+  buildShop(){
+    document.getElementById('shopCoins').textContent = P.coins;
+    const grid = document.getElementById('shopGrid'); grid.innerHTML = '';
+    Object.entries(BOARDS).forEach(([id, b]) => {
+      const owned = P.ownedBoards.includes(id);
+      const active = P.activeBoard === id;
+      const card = document.createElement('div');
+      card.className = 'board-card' + (active ? ' owned-active' : '');
+      card.innerHTML = `
+        <h4>${b.name}</h4>
+        <div class="board-swatch" style="background:linear-gradient(90deg,${b.c1},${b.c2})"></div>
+        ${owned
+          ? `<button class="use" ${active?'disabled':''}>${active?'Équipée ✓':'Équiper'}</button>`
+          : `<button ${P.coins < b.price ? 'disabled':''}>🪙 ${b.price}</button>`}`;
+      card.querySelector('button').onclick = () => {
+        if(owned){ P.activeBoard = id; }
+        else if(P.coins >= b.price){ P.coins -= b.price; P.ownedBoards.push(id); P.activeBoard = id; Sfx.fanfare(); }
+        persist(); UI.buildShop();
+      };
+      grid.appendChild(card);
+    });
+  },
+};
+
+const Settings = {
+  sync(){
+    document.getElementById('tglStrict').classList.toggle('on', P.settings.strict);
+    document.getElementById('tglHint').classList.toggle('on', P.settings.hint);
+    document.getElementById('tglSound').classList.toggle('on', P.settings.sound);
+  },
+  toggle(k){ P.settings[k] = !P.settings[k]; persist(); Settings.sync(); Sfx.click(); },
+};
+
+/* ---------------- Accent strip ---------------- */
+(() => {
+  const strip = document.getElementById('accentStrip');
+  ['é','è','ê','à','ç','î','û'].forEach(ch => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = ch;
+    b.onmousedown = e => e.preventDefault(); // keep input focus
+    b.onclick = () => {
+      const inp = document.getElementById('answer');
+      const s = inp.selectionStart ?? inp.value.length;
+      inp.value = inp.value.slice(0,s) + ch + inp.value.slice(inp.selectionEnd ?? s);
+      inp.focus(); inp.setSelectionRange(s+1, s+1);
+    };
+    strip.appendChild(b);
+  });
+})();
+
+/* ---------------- Answer normalization ---------------- */
+function norm(s, stripAccents){
+  s = s.trim().toLowerCase().replace(/\s+/g,' ');
+  if(stripAccents) s = s.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  return s;
+}
+function isCorrect(input, target){
+  const strip = !P.settings.strict;
+  return norm(input, strip) === norm(target, strip);
+}
+
+/* =====================================================================
+   CANVAS WORLD
+===================================================================== */
+const World = (() => {
+  const cv = document.getElementById('cv');
+  const ctx = cv.getContext('2d');
+  let W = 0, H = 0, t = 0, scroll = 0;
+  let speed = 3, shakeI = 0;     // world scroll speed, screen shake intensity
+  const flakes = [], sprays = [], confs = [], fcoins = [];
+  let farPeaks = [], midPeaks = [], trees = [];
+  const FIRE_COLORS = [null, '255,198,61', '255,93,143', '139,92,246'];
+
+  // rider state
+  const rider = {
+    x: 0.3, baseY: 0,           // x as fraction of W
+    airY: 0, vy: 0, rot: 0, rotV: 0,
+    mode: 'ride',               // ride | air | tumble | recover
+    tumbleT: 0, fireTier: 0,
+  };
+
+  function resize(){
+    W = cv.width = window.innerWidth * devicePixelRatio;
+    H = cv.height = window.innerHeight * devicePixelRatio;
+    cv.style.width = '100%'; cv.style.height = '100%';
+    genScenery();
+  }
+  window.addEventListener('resize', resize);
+
+  function rnd(a,b){ return a + Math.random()*(b-a); }
+
+  function genScenery(){
+    farPeaks = []; midPeaks = []; trees = [];
+    for(let x = -200; x < W + 600; x += rnd(180,320)*devicePixelRatio)
+      farPeaks.push({x, h: rnd(.18,.32)*H, w: rnd(160,300)*devicePixelRatio});
+    for(let x = -200; x < W + 600; x += rnd(240,420)*devicePixelRatio)
+      midPeaks.push({x, h: rnd(.10,.2)*H, w: rnd(200,360)*devicePixelRatio});
+    for(let x = -100; x < W + 400; x += rnd(90,240)*devicePixelRatio)
+      trees.push({x, s: rnd(.5,1.1), layer: Math.random() < .5 ? 0 : 1});
+    flakes.length = 0;
+    for(let i=0;i<90;i++) flakes.push({x:Math.random()*W, y:Math.random()*H, r:rnd(1,3.4)*devicePixelRatio, v:rnd(.4,1.4)});
+  }
+
+  function terrainY(x){
+    // gentle rolling snow surface near bottom
+    const base = H * .78;
+    return base + Math.sin((x + scroll*2)*.0016) * H*.02 + Math.sin((x + scroll*2)*.0005) * H*.03;
+  }
+
+  /* ---- rider drawing (cute vector snowboarder) ---- */
+  function drawRider(px, py){
+    const s = Math.min(W,H) * .00034;   // scale unit
+    const board = BOARDS[P.activeBoard] || BOARDS.flamant;
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.rotate(rider.rot);
+    const k = Math.max(.7, Math.min(1.4, W/1400)) * devicePixelRatio;
+    ctx.scale(k, k);
+
+    // fire trail glow when on streak — color escalates with combo tier
+    if(rider.fireTier > 0 && rider.mode !== 'tumble'){
+      const c = rider.fireTier === 3
+        ? `${Math.floor(128+127*Math.sin(t*.15))},${Math.floor(128+127*Math.sin(t*.15+2))},${Math.floor(128+127*Math.sin(t*.15+4))}`
+        : FIRE_COLORS[rider.fireTier];
+      const rad = 60 + rider.fireTier*12;
+      const g = ctx.createRadialGradient(0,10,4, 0,10,rad);
+      g.addColorStop(0,`rgba(${c},.6)`); g.addColorStop(1,`rgba(${c},0)`);
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0,10,rad,0,7); ctx.fill();
+    }
+
+    // board
+    ctx.save();
+    ctx.rotate(-.12);
+    const bg = ctx.createLinearGradient(-46,0,46,0);
+    bg.addColorStop(0, board.c1); bg.addColorStop(1, board.c2);
+    ctx.fillStyle = bg;
+    ctx.beginPath();
+    ctx.roundRect(-48, 22, 96, 12, 8);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(30,36,71,.35)'; ctx.lineWidth = 2; ctx.stroke();
+    if(board.stars){
+      ctx.fillStyle = '#fff';
+      [-30,-8,16,34].forEach((sx,i)=>{ ctx.beginPath(); ctx.arc(sx, 28, i%2?1.6:2.4, 0, 7); ctx.fill(); });
+    }
+    ctx.restore();
+
+    // legs
+    ctx.strokeStyle = '#2B3050'; ctx.lineWidth = 8; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(-12, 20); ctx.lineTo(-14, -2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(16, 18); ctx.lineTo(12, -2); ctx.stroke();
+
+    // body (jacket)
+    ctx.fillStyle = '#6FD8F2';
+    ctx.beginPath(); ctx.roundRect(-16, -26, 32, 30, 10); ctx.fill();
+    ctx.strokeStyle = 'rgba(30,36,71,.25)'; ctx.lineWidth = 2; ctx.stroke();
+
+    // arms
+    ctx.strokeStyle = '#6FD8F2'; ctx.lineWidth = 8;
+    const wob = rider.mode === 'air' ? -14 : Math.sin(t*.1)*3;
+    ctx.beginPath(); ctx.moveTo(-14,-18); ctx.lineTo(-30, -6 + wob); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(14,-18); ctx.lineTo(30, -10 + wob); ctx.stroke();
+
+    // head
+    ctx.fillStyle = '#F5C9A8';
+    ctx.beginPath(); ctx.arc(0, -38, 12, 0, 7); ctx.fill();
+    // beanie
+    ctx.fillStyle = '#FF5D8F';
+    ctx.beginPath(); ctx.arc(0, -42, 12.5, Math.PI, 0); ctx.fill();
+    ctx.fillRect(-12.5, -44, 25, 5);
+    ctx.beginPath(); ctx.arc(0, -54, 4.5, 0, 7); ctx.fill(); // pompom
+    // hair peeking (Leila!)
+    ctx.strokeStyle = '#5A3825'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(10,-38); ctx.quadraticCurveTo(16,-30, 13,-20); ctx.stroke();
+    // face
+    ctx.fillStyle = '#2B3050';
+    ctx.beginPath(); ctx.arc(4,-38, 1.8, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(9,-38, 1.8, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#2B3050'; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.arc(6.5,-34.5, 2.6, .15*Math.PI, .85*Math.PI); ctx.stroke(); // smile
+    ctx.restore();
+  }
+
+  function drawTree(x, groundY, s){
+    ctx.save(); ctx.translate(x, groundY); const u = s*devicePixelRatio;
+    ctx.fillStyle = '#3B2B22'; ctx.fillRect(-4*u, -8*u, 8*u, 10*u);
+    ctx.fillStyle = '#1F4A3D';
+    for(let i=0;i<3;i++){
+      const w = (34 - i*8)*u, y = -6*u - i*20*u;
+      ctx.beginPath(); ctx.moveTo(-w/2, y); ctx.lineTo(w/2, y); ctx.lineTo(0, y - 26*u); ctx.closePath(); ctx.fill();
+    }
+    // snow caps
+    ctx.fillStyle = 'rgba(244,248,255,.9)';
+    ctx.beginPath(); ctx.moveTo(-8*u, -52*u); ctx.lineTo(8*u, -52*u); ctx.lineTo(0, -66*u); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+
+  function frame(){
+    t++;
+    scroll += speed * devicePixelRatio;
+    ctx.clearRect(0,0,W,H);
+    ctx.save();
+    if(shakeI > .5){
+      ctx.translate((Math.random()-.5)*shakeI*devicePixelRatio, (Math.random()-.5)*shakeI*devicePixelRatio);
+      shakeI *= .88;
+    } else shakeI = 0;
+
+    // sky handled by CSS body gradient behind transparent canvas? Canvas covers it,
+    // so paint the dusk gradient here.
+    const sky = ctx.createLinearGradient(0,0,0,H);
+    sky.addColorStop(0,'#232A5C'); sky.addColorStop(.55,'#5D7BC4'); sky.addColorStop(1,'#F2C4CE');
+    ctx.fillStyle = sky; ctx.fillRect(0,0,W,H);
+
+    // moon
+    ctx.fillStyle = 'rgba(255,246,220,.9)';
+    ctx.beginPath(); ctx.arc(W*.82, H*.16, Math.min(W,H)*.045, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(93,123,196,.5)';
+    ctx.beginPath(); ctx.arc(W*.82 + Math.min(W,H)*.018, H*.155, Math.min(W,H)*.038, 0, 7); ctx.fill();
+
+    // far peaks (slow parallax)
+    ctx.fillStyle = '#8FA6DC';
+    farPeaks.forEach(p => {
+      const x = ((p.x - scroll*.15) % (W + 600) + W + 600) % (W + 600) - 300;
+      ctx.beginPath(); ctx.moveTo(x - p.w/2, H*.66); ctx.lineTo(x, H*.66 - p.h); ctx.lineTo(x + p.w/2, H*.66); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(244,248,255,.85)';
+      ctx.beginPath(); ctx.moveTo(x - p.w*.14, H*.66 - p.h*.72); ctx.lineTo(x, H*.66 - p.h); ctx.lineTo(x + p.w*.14, H*.66 - p.h*.72); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#8FA6DC';
+    });
+
+    // mid peaks
+    ctx.fillStyle = '#6E86C8';
+    midPeaks.forEach(p => {
+      const x = ((p.x - scroll*.35) % (W + 600) + W + 600) % (W + 600) - 300;
+      ctx.beginPath(); ctx.moveTo(x - p.w/2, H*.74); ctx.lineTo(x, H*.74 - p.h); ctx.lineTo(x + p.w/2, H*.74); ctx.closePath(); ctx.fill();
+    });
+
+    // snow ground
+    ctx.fillStyle = '#F4F8FF';
+    ctx.beginPath();
+    ctx.moveTo(0, H);
+    for(let x = 0; x <= W; x += 24*devicePixelRatio) ctx.lineTo(x, terrainY(x));
+    ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
+    // ground shading
+    ctx.strokeStyle = 'rgba(201,216,240,.9)'; ctx.lineWidth = 5*devicePixelRatio;
+    ctx.beginPath();
+    for(let x = 0; x <= W; x += 24*devicePixelRatio){ const y = terrainY(x)+8*devicePixelRatio; x===0?ctx.moveTo(x,y):ctx.lineTo(x,y); }
+    ctx.stroke();
+
+    // back trees (behind rider), front trees drawn after rider
+    trees.forEach(tr => {
+      if(tr.layer !== 0) return;
+      const x = ((tr.x - scroll*.7) % (W + 400) + W + 400) % (W + 400) - 200;
+      drawTree(x, terrainY(x)+4, tr.s*.8);
+    });
+
+    /* ---- rider physics ---- */
+    const px = rider.x * W;
+    const gy = terrainY(px) - 26*devicePixelRatio;
+
+    if(rider.mode === 'ride'){
+      rider.airY = 0; rider.rot = Math.sin((px + scroll*2)*.0016)*.12 + .06;
+      rider.rotV = 0;
+    } else if(rider.mode === 'air'){
+      rider.vy += .5 * devicePixelRatio;
+      rider.airY += rider.vy;
+      rider.rot += rider.rotV;
+      if(rider.airY >= 0){ rider.airY = 0; rider.mode = 'ride'; rider.rot = 0; spray(px, gy+20, 14); }
+    } else if(rider.mode === 'tumble'){
+      rider.tumbleT++;
+      rider.rot += .3;
+      rider.airY = Math.min(0, rider.airY + rider.vy); rider.vy += .6*devicePixelRatio;
+      if(rider.tumbleT === 2) spray(px, gy+20, 26);
+      if(rider.tumbleT > 46){ rider.mode = 'ride'; rider.rot = 0; rider.tumbleT = 0; }
+    }
+
+    drawRider(px, gy + rider.airY);
+
+    // speed lines when fast / on fire
+    if(speed > 5){
+      ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 2*devicePixelRatio;
+      for(let i=0;i<5;i++){
+        const y = gy - 40*devicePixelRatio + i*18*devicePixelRatio;
+        const x = px - 60*devicePixelRatio - (t*13 + i*47) % (140*devicePixelRatio);
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 30*devicePixelRatio, y); ctx.stroke();
+      }
+    }
+
+    // front trees
+    trees.forEach(tr => {
+      if(tr.layer !== 1) return;
+      const x = ((tr.x - scroll*1.15) % (W + 400) + W + 400) % (W + 400) - 200;
+      drawTree(x, terrainY(x) + 26*devicePixelRatio, tr.s);
+    });
+
+    // snow spray particles
+    for(let i = sprays.length-1; i >= 0; i--){
+      const s = sprays[i];
+      s.x += s.vx; s.y += s.vy; s.vy += .3*devicePixelRatio; s.life--;
+      ctx.fillStyle = `rgba(255,255,255,${s.life/30})`;
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 7); ctx.fill();
+      if(s.life <= 0) sprays.splice(i,1);
+    }
+
+    // confetti
+    for(let i = confs.length-1; i >= 0; i--){
+      const c = confs[i];
+      c.x += c.vx; c.y += c.vy; c.vy += .18*devicePixelRatio; c.r += c.vr; c.life--;
+      ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(c.r);
+      ctx.fillStyle = c.col; ctx.globalAlpha = Math.min(1, c.life/25);
+      ctx.fillRect(-c.s/2, -c.s/4, c.s, c.s/2);
+      ctx.restore();
+      if(c.life <= 0) confs.splice(i,1);
+    }
+    ctx.globalAlpha = 1;
+
+    // flying coins (arc from rider to the coin pill)
+    for(let i = fcoins.length-1; i >= 0; i--){
+      const c = fcoins[i];
+      c.p += c.v;
+      const p = Math.min(1, c.p);
+      const ease = p*p*(3-2*p);
+      const x = c.x0 + (c.tx - c.x0)*ease + Math.sin(p*Math.PI)*c.arc;
+      const y = c.y0 + (c.ty - c.y0)*ease - Math.sin(p*Math.PI)*80*devicePixelRatio;
+      ctx.fillStyle = '#FFC63D';
+      ctx.beginPath(); ctx.arc(x, y, 8*devicePixelRatio, 0, 7); ctx.fill();
+      ctx.fillStyle = '#E8A02E';
+      ctx.beginPath(); ctx.arc(x, y, 8*devicePixelRatio, 0, 7); ctx.lineWidth = 2; ctx.strokeStyle='#B87A18'; ctx.stroke();
+      ctx.fillStyle = '#B87A18'; ctx.font = `${9*devicePixelRatio}px Fredoka,sans-serif`;
+      ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('★', x, y);
+      if(p >= 1){ fcoins.splice(i,1); if(c.cb) c.cb(); }
+    }
+
+    // falling snow
+    ctx.fillStyle = 'rgba(255,255,255,.85)';
+    flakes.forEach(f => {
+      f.y += f.v*devicePixelRatio; f.x += Math.sin((t + f.y)*.01)*.6 - speed*.4;
+      if(f.y > H) { f.y = -6; f.x = Math.random()*W; }
+      if(f.x < 0) f.x += W;
+      ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, 7); ctx.fill();
+    });
+
+    ctx.restore();
+    requestAnimationFrame(frame);
+  }
+
+  function spray(x, y, n){
+    for(let i=0;i<n;i++) sprays.push({
+      x, y, vx: rnd(-4,4)*devicePixelRatio, vy: rnd(-6,-1)*devicePixelRatio,
+      r: rnd(2,5)*devicePixelRatio, life: rnd(16,30),
+    });
+  }
+
+  const CONF_COLS = ['#FF5D8F','#FFC63D','#7FE3C3','#6FD8F2','#8B5CF6','#FFFFFF'];
+  function confetti(n, cx, cy){
+    const x = (cx ?? .5) * W, y = (cy ?? .3) * H;
+    for(let i=0;i<n;i++) confs.push({
+      x, y, vx: rnd(-7,7)*devicePixelRatio, vy: rnd(-9,-2)*devicePixelRatio,
+      r: rnd(0,6.28), vr: rnd(-.25,.25), s: rnd(6,13)*devicePixelRatio,
+      col: CONF_COLS[Math.floor(Math.random()*CONF_COLS.length)], life: rnd(45,85),
+    });
+  }
+
+  function coinBurst(n, cb){
+    const px = rider.x * W, py = terrainY(px) - 60*devicePixelRatio;
+    for(let i=0;i<n;i++) fcoins.push({
+      x0: px + rnd(-30,30)*devicePixelRatio, y0: py + rnd(-20,20)*devicePixelRatio,
+      tx: 210*devicePixelRatio, ty: 30*devicePixelRatio,
+      arc: rnd(-60,60)*devicePixelRatio, p: -i*.09, v: .028 + Math.random()*.008, cb,
+    });
+  }
+
+  function jump(spins){        // spins: 0 = ollie, 1 = 360, 2 = backflip 720
+    rider.mode = 'air';
+    rider.vy = -(11 + spins*2.5) * devicePixelRatio;
+    rider.rotV = spins === 0 ? 0 : (spins === 1 ? .17 : .3) * (Math.random()<.5?-1:1);
+    spray(rider.x*W, terrainY(rider.x*W), 10);
+  }
+  function tumble(){ rider.mode = 'tumble'; rider.vy = -4*devicePixelRatio; rider.tumbleT = 0; shakeI = 22; }
+  function setFire(tier){ rider.fireTier = tier; }
+  function setSpeed(v){ speed = v; }
+  function shake(v){ shakeI = Math.max(shakeI, v); }
+
+  resize(); requestAnimationFrame(frame);
+  return { jump, tumble, setFire, setSpeed, shake, confetti, coinBurst };
+})();
+
+/* ---------------- Toast ---------------- */
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.remove('show'); void el.offsetWidth;
+  el.classList.add('show');
+}
+
+/* ---------------- Daily streak ---------------- */
+const Daily = (() => {
+  const iso = d => d.toISOString().slice(0,10);
+  function today(){ return iso(new Date()); }
+  function touch(){                       // call when a run finishes
+    const d = today();
+    if(P.day.last === d) return false;
+    const y = new Date(); y.setDate(y.getDate()-1);
+    P.day.streak = (P.day.last === iso(y)) ? P.day.streak + 1 : 1;
+    P.day.last = d; persist();
+    return true;
+  }
+  function mult(){ const s = streak(); return s > 0 ? 1 + Math.min(s-1, 5) * .1 : 1; }
+  function streak(){ return P.day.last === today() ? P.day.streak
+    : (() => { const y = new Date(); y.setDate(y.getDate()-1);
+               return P.day.last === iso(y) ? P.day.streak : 0; })(); }
+  return { touch, mult, streak };
+})();
+
+/* ---------------- Missions du jour ---------------- */
+const Missions = (() => {
+  const POOL = [
+    {id:'land12',  txt:'Réussis 12 sauts',            n:12, reward:30, ev:'land'},
+    {id:'back4',   txt:'Fais 4 backflips 720',        n:4,  reward:40, ev:'backflip'},
+    {id:'combo5',  txt:'Atteins un combo de 5',       n:5,  reward:40, ev:'combo', mode:'max'},
+    {id:'perfect', txt:'Fais une descente parfaite',  n:1,  reward:60, ev:'perfect'},
+    {id:'runs3',   txt:'Termine 3 descentes',         n:3,  reward:25, ev:'run'},
+    {id:'gold2',   txt:'Réussis 2 verbes dorés',      n:2,  reward:35, ev:'golden'},
+  ];
+  function today(){ return new Date().toISOString().slice(0,10); }
+  function active(){
+    const d = today();
+    if(P.missions.date !== d){ P.missions = { date:d, prog:{}, done:{} }; persist(); }
+    let seed = 0; for(const ch of d) seed = (seed*31 + ch.charCodeAt(0)) >>> 0;
+    const idx = [];
+    while(idx.length < 3){
+      seed = (seed * 1103515245 + 12345) >>> 0;
+      const k = seed % POOL.length;
+      if(!idx.includes(k)) idx.push(k);
+    }
+    return idx.map(i => POOL[i]);
+  }
+  function event(ev, amt){
+    amt = amt || 1;
+    const done = [];
+    active().forEach(m => {
+      if(m.ev !== ev || P.missions.done[m.id]) return;
+      const prev = P.missions.prog[m.id] || 0;
+      P.missions.prog[m.id] = m.mode === 'max' ? Math.max(prev, amt) : prev + amt;
+      if(P.missions.prog[m.id] >= m.n){
+        P.missions.done[m.id] = true;
+        P.coins += m.reward;
+        done.push(m);
+      }
+    });
+    persist();
+    done.forEach((m,i) => setTimeout(() => { toast(`🎯 Mission réussie : +${m.reward} 🪙`); Sfx.fanfare(); }, i*1200));
+  }
+  function render(){
+    const box = document.getElementById('missionList');
+    box.innerHTML = active().map(m => {
+      const p = Math.min(P.missions.prog[m.id] || 0, m.n);
+      const done = !!P.missions.done[m.id];
+      return `<div class="mission${done?' done':''}">
+        <div class="m-row"><span>${done?'✅ ':''}${m.txt}</span><span class="rw">+${m.reward} 🪙</span></div>
+        <div class="m-bar"><div class="m-fill" style="width:${p/m.n*100}%"></div></div>
+      </div>`;
+    }).join('');
+  }
+  return { event, render };
+})();
+
+/* ---------------- count-up number animation ---------------- */
+function countUp(el, target, suffix, ms){
+  suffix = suffix || ''; ms = ms || 900;
+  const t0 = performance.now();
+  (function step(){
+    const p = Math.min(1, (performance.now()-t0)/ms);
+    const ease = 1 - Math.pow(1-p, 3);
+    el.textContent = Math.round(target*ease) + suffix;
+    if(p < 1) requestAnimationFrame(step);
+  })();
+}
+
+/* =====================================================================
+   GAME LOOP
+===================================================================== */
+const Game = (() => {
+  const JUMPS = 10;
+  const TIERS = [                                    // combo escalation
+    { at:3, mult:2, name:'EN FEU ×2 !',      cls:'t1', speed:6.5 },
+    { at:5, mult:3, name:'SUPERNOVA ×3 !!',  cls:'t2', speed:8.5 },
+    { at:8, mult:4, name:'LÉGENDAIRE ×4 !!!', cls:'t3', speed:10.5 },
+  ];
+  let mtn = null, jumpN = 0, score = 0, streak = 0, correct = 0;
+  let current = null, deadline = 0, timerId = null, clockMs = 0;
+  let bestTrick = null, misses = [], answered = false;
+  let runCoins = 0, backflips = 0, goldensHit = 0, lastTier = 0;
+  let chest = null;
+
+  const $ = id => document.getElementById(id);
+
+  function tierFor(s){
+    let t = 0;
+    TIERS.forEach((T,i) => { if(s >= T.at) t = i+1; });
+    return t;
+  }
+  function multFor(s){ const t = tierFor(s); return t ? TIERS[t-1].mult : 1; }
+
+  function weightKey(v, tense, i){ return `${v}|${tense}|${i}`; }
+
+  function pickQuestion(){
+    const pool = [];
+    mtn.verbs.forEach(v => {
+      mtn.tenses.forEach(tense => {
+        for(let i=0;i<6;i++){
+          const w = 1 + (P.weights[weightKey(v,tense,i)] || 0) * 2;
+          pool.push({v, tense, i, w});
+        }
+      });
+    });
+    let total = pool.reduce((s,q)=>s+q.w, 0);
+    let r = Math.random()*total;
+    for(const q of pool){ r -= q.w; if(r <= 0) return q; }
+    return pool[pool.length-1];
+  }
+
+  function start(mtnId){
+    mtn = MOUNTAINS[mtnId];
+    jumpN = 0; score = 0; streak = 0; correct = 0; bestTrick = null; misses = [];
+    runCoins = 0; backflips = 0; goldensHit = 0; lastTier = 0; chest = null;
+    UI.show('game');
+    World.setFire(0); World.setSpeed(3.5);
+    $('recordPill').classList.remove('beaten');
+    updateHUD();
+    countdown(3);
+  }
+
+  function countdown(n){
+    const cd = $('countdown');
+    cd.classList.add('show');
+    const step = k => {
+      if(k === 0){ cd.textContent = 'GO !'; Sfx.fire(); setTimeout(()=>{ cd.classList.remove('show'); nextJump(); }, 550); return; }
+      cd.textContent = k; Sfx.tick();
+      setTimeout(()=>step(k-1), 700);
+    };
+    step(n);
+  }
+
+  function nextJump(){
+    if(jumpN >= JUMPS) return finish();
+    jumpN++;
+    updateHUD();
+    current = pickQuestion();
+    answered = false;
+    current.golden = Math.random() < .12;            // ✨ 1-in-8ish golden verb, ×3 points
+    const form = conjugate(current.v, current.tense, current.i);
+    current.form = form;
+    current.pr = pickPronoun(current.i);
+
+    $('pTense').textContent = current.tense.toUpperCase();
+    $('pVerb').textContent = current.v;
+    $('pEng').textContent = P.settings.hint ? (VERBS[current.v].eng || '') : '';
+    $('pEng').style.display = P.settings.hint ? '' : 'none';
+    $('pPerson').textContent = displayPronoun(current.pr, form) === "j'" ? "j'" : current.pr;
+    $('promptCard').classList.toggle('golden', current.golden);
+    $('goldenTag').style.display = current.golden ? '' : 'none';
+    if(current.golden) Sfx.golden();
+
+    const zone = $('prompt-zone');
+    zone.classList.add('active');
+    const inp = $('answer'); inp.value = ''; inp.focus();
+
+    clockMs = mtn.clock * 1000;
+    deadline = performance.now() + clockMs;
+    clearInterval(timerId);
+    timerId = setInterval(() => {
+      const left = deadline - performance.now();
+      const fill = $('timerfill');
+      fill.style.width = Math.max(0, left/clockMs*100) + '%';
+      fill.classList.toggle('low', left < clockMs*.3);
+      if(left < clockMs*.3 && Math.floor(left/500) !== Math.floor((left+50)/500)) Sfx.tick();
+      if(left <= 0) submit(true);
+    }, 50);
+  }
+
+  function submit(timedOut){
+    if(!current || answered) return;
+    answered = true;
+    clearInterval(timerId);
+    const inp = $('answer');
+    const ok = !timedOut && isCorrect(inp.value, current.form);
+    const key = weightKey(current.v, current.tense, current.i);
+    $('prompt-zone').classList.remove('active');
+
+    if(ok){
+      correct++;
+      const elapsed = clockMs - (deadline - performance.now());
+      const frac = elapsed / clockMs;
+      let trick, pts, spins;
+      if(frac < .35){ trick = 'BACKFLIP 720 !'; pts = 120; spins = 2; backflips++; Missions.event('backflip'); }
+      else if(frac < .7){ trick = 'MÉTHOD 360 !'; pts = 70; spins = 1; }
+      else { trick = 'OLLIE !'; pts = 40; spins = 0; }
+      streak++;
+      Missions.event('land');
+      Missions.event('combo', streak);
+
+      const mult = multFor(streak);
+      pts *= mult;
+      let tag = mult > 1 ? ` ×${mult}` : '';
+      if(current.golden){ pts *= 3; goldensHit++; Missions.event('golden'); tag += ' ✨×3'; }
+      score += pts;
+      if(!bestTrick || pts > bestTrick.pts) bestTrick = {name:trick, pts};
+
+      // combo tier escalation
+      const tier = tierFor(streak);
+      if(tier > lastTier){
+        lastTier = tier;
+        const T = TIERS[tier-1];
+        World.setFire(tier); World.setSpeed(T.speed);
+        World.confetti(20 + tier*15, .5, .25);
+        World.shake(8 + tier*4);
+        showCombo(T.name, T.cls);
+        Sfx.tierUp(tier);
+      }
+
+      World.jump(spins);
+      if(spins === 2) World.shake(10);
+      if(current.golden){ World.confetti(24, .3, .5); }
+      Sfx.land(spins, streak);
+      showBurst(trick + tag, '+' + pts + ' pts');
+
+      // coins fly to the pill 🪙
+      const earn = (3 + tierFor(streak)) + (current.golden ? 10 : 0) + (spins === 2 ? 2 : 0);
+      let flown = 0;
+      World.coinBurst(Math.min(earn, 9), () => {
+        flown++; runCoins++;
+        Sfx.coin(flown);
+        const pill = $('coinPill');
+        pill.textContent = '🪙 ' + runCoins;
+        pill.classList.add('bump'); setTimeout(()=>pill.classList.remove('bump'), 90);
+      });
+      runCoins += Math.max(0, earn - Math.min(earn, 9)); // remainder without animation
+
+      if(P.weights[key]) P.weights[key] = Math.max(0, P.weights[key] - 1);
+    } else {
+      streak = 0; lastTier = 0;
+      World.setFire(0); World.setSpeed(3.5);
+      // still do the trick — timing still decides which — but no points
+      const elapsed = clockMs - Math.max(0, deadline - performance.now());
+      const frac = Math.min(1, elapsed / clockMs);
+      const spins = timedOut ? 0 : (frac < .35 ? 2 : frac < .7 ? 1 : 0);
+      World.jump(spins);
+      Sfx.miss();
+      showBurst('RATÉ…', '+0 pts');
+      P.weights[key] = (P.weights[key] || 0) + 1.5;
+      misses.push(current);
+      const rc = $('reveal-card');
+      rc.querySelector('.answer').textContent =
+        displayPronoun(current.pr, current.form) === "j'"
+          ? "j'" + current.form : current.pr + ' ' + current.form;
+      rc.classList.add('show');
+      setTimeout(()=>rc.classList.remove('show'), 2100);
+    }
+    persist();
+    updateHUD();
+    setTimeout(nextJump, ok ? 1300 : 2300);
+  }
+
+  function showBurst(name, pts){
+    const b = $('trick-burst');
+    b.querySelector('.trick-name').textContent = name;
+    b.querySelector('.trick-pts').textContent = pts;
+    b.classList.remove('show'); void b.offsetWidth;
+    b.classList.add('show');
+  }
+
+  function showCombo(name, cls){
+    const c = $('combo-banner');
+    c.textContent = name;
+    c.className = '';
+    void c.offsetWidth;
+    c.className = 'show ' + cls;
+  }
+
+  function updateHUD(){
+    $('scorePill').textContent = score + ' pts';
+    $('streakPill').textContent = '🔥 ' + streak;
+    $('streakPill').classList.toggle('fire', streak >= 3);
+    $('coinPill').textContent = '🪙 ' + runCoins;
+    $('jumpPill').textContent = 'Saut ' + Math.min(Math.max(jumpN,1), JUMPS) + '/' + JUMPS;
+    const rec = P.best[mtn.id] || 0;
+    $('recordPill').textContent = '🏆 ' + (score > rec && rec > 0 ? score : rec);
+    if(rec > 0 && score > rec){ $('recordPill').classList.add('beaten'); }
+  }
+
+  function finish(){
+    clearInterval(timerId);
+    World.setFire(0); World.setSpeed(3);
+
+    const acc = Math.round(correct / JUMPS * 100);
+    const isNewDay = Daily.touch();
+    const dayMult = Daily.mult();
+    const coinsEarned = Math.round((runCoins + (acc === 100 ? 40 : 0)) * dayMult);
+    const xpBefore = P.xp;
+    const xpEarned = Math.round(score / 8);
+    const prevBest = P.best[mtn.id] || 0;
+    const newRecord = score > prevBest;
+    if(newRecord) P.best[mtn.id] = score;
+    P.coins += coinsEarned;
+    P.xp += xpEarned;
+    persist();
+
+    Missions.event('run');
+    if(acc === 100) Missions.event('perfect');
+
+    $('resTitle').textContent =
+      newRecord && prevBest > 0 ? '🏆 NOUVEAU RECORD ! 🏆'
+      : acc === 100 ? 'DESCENTE PARFAITE ! 🏆'
+      : acc >= 70 ? 'Belle descente ! 🏁' : 'Descente terminée 🏁';
+    $('resSub').textContent = mtn.name + ' · ' + mtn.desc +
+      (newRecord && prevBest > 0 ? ` — ancien record : ${prevBest}` : '');
+
+    countUp($('resScore'), score);
+    countUp($('resAcc'), acc, '%');
+    $('resBest').textContent = bestTrick ? bestTrick.name.replace(' !','') : '—';
+    $('resCoins').textContent = '+' + coinsEarned + ' 🪙' + (dayMult > 1 ? ` (×${dayMult.toFixed(1)} 🔥)` : '');
+
+    if(newRecord || acc === 100){ Sfx.record(); World.confetti(70, .5, .3); World.confetti(50, .25, .4); World.confetti(50, .75, .4); }
+    else Sfx.fanfare();
+    if(isNewDay && Daily.streak() > 1) setTimeout(()=>toast(`🔥 Série de ${Daily.streak()} jours ! Bonus pièces +${Math.round((Daily.mult()-1)*100)}%`), 800);
+
+    // XP progress toward next mountain
+    const next = MOUNTAINS.find(m => m.xpReq > xpBefore);
+    const noteEl = $('resXPnote'), fillEl = $('resXPfill');
+    if(next){
+      const prevReq = MOUNTAINS.filter(m=>m.xpReq <= xpBefore).reduce((a,m)=>Math.max(a,m.xpReq),0);
+      const pct = Math.min(100, (P.xp - prevReq) / (next.xpReq - prevReq) * 100);
+      noteEl.textContent = `+${xpEarned} XP — ${next.name} à ${next.xpReq} XP (${P.xp}/${next.xpReq})`;
+      fillEl.style.width = '0%'; setTimeout(()=>fillEl.style.width = pct + '%', 60);
+    } else {
+      noteEl.textContent = `+${xpEarned} XP — toutes les pistes sont débloquées ! (${P.xp} XP)`;
+      fillEl.style.width = '100%';
+    }
+
+    // unlock flash
+    const unlocked = MOUNTAINS.filter(m => m.xpReq > xpBefore && m.xpReq <= P.xp);
+    $('unlockFlash').innerHTML = unlocked.map(m =>
+      `<div class="unlock-flash">🎉 Nouvelle piste débloquée : ${m.icon} ${m.name} !</div>`).join('');
+
+    // mystery chest for a solid run
+    chest = acc >= 70 ? rollChest() : null;
+    $('chestZone').style.display = chest ? '' : 'none';
+    $('chestBtn').disabled = false;
+    $('chestBtn').textContent = '🎁';
+    $('chestReveal').innerHTML = '';
+
+    // review list
+    const rl = $('reviewList');
+    if(misses.length){
+      const seen = new Set();
+      rl.innerHTML = '<h3>À réviser 📝</h3>' + misses.filter(m=>{
+        const k = m.v + m.tense + m.i; if(seen.has(k)) return false; seen.add(k); return true;
+      }).map(m => {
+        const full = displayPronoun(m.pr, m.form) === "j'" ? "j'" + m.form : m.pr + ' ' + m.form;
+        return `<div class="review-item"><span>${m.v} · ${m.tense}</span><b>${full}</b></div>`;
+      }).join('');
+    } else {
+      rl.innerHTML = '<h3 style="color:#4EC9A0">Aucune erreur — chapeau ! 🎩</h3>';
+    }
+
+    UI.show('results');
+  }
+
+  function rollChest(){
+    const r = Math.random();
+    if(r < .03)  return { rar:'legendaire', label:'LÉGENDAIRE', coins: 200 };
+    if(r < .15)  return { rar:'epique',     label:'ÉPIQUE',     coins: 70 + Math.floor(Math.random()*51) };
+    if(r < .40)  return { rar:'rare',       label:'RARE',       coins: 30 + Math.floor(Math.random()*31) };
+    return          { rar:'commun',     label:'Commun',     coins: 10 + Math.floor(Math.random()*16) };
+  }
+
+  function openChest(){
+    if(!chest) return;
+    const btn = $('chestBtn');
+    if(btn.disabled) return;
+    btn.disabled = true;
+    btn.classList.add('shaking');
+    Sfx.chestShake();
+    setTimeout(()=>Sfx.chestShake(), 180);
+    setTimeout(()=>Sfx.chestShake(), 360);
+    setTimeout(() => {
+      btn.classList.remove('shaking');
+      btn.textContent = '🎉';
+      P.coins += chest.coins; persist();
+      $('chestReveal').innerHTML =
+        `<div class="chest-reveal rar-${chest.rar}">${chest.label} · +${chest.coins} 🪙</div>`;
+      Sfx.chestOpen(chest.rar);
+      if(chest.rar === 'epique' || chest.rar === 'legendaire'){
+        World.confetti(chest.rar === 'legendaire' ? 90 : 45, .5, .5);
+        World.shake(chest.rar === 'legendaire' ? 16 : 8);
+      }
+    }, 600);
+  }
+
+  function replay(){ start(mtn.id); }
+  function quit(){ clearInterval(timerId); $('prompt-zone').classList.remove('active'); UI.show('menu'); }
+
+  document.getElementById('answer').addEventListener('keydown', e => {
+    if(e.key === 'Enter'){ e.preventDefault(); submit(false); }
+  });
+
+  return { start, submit: () => submit(false), replay, quit, openChest };
+})();
+
+/* ---------------- boot ---------------- */
+Settings.sync();
+UI.refreshMenu();
+</script>
+</body>
+</html>
