@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Poudreuse ❄ le jeu de conjugaison snowboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+<!-- ================= MENU ================= -->
+<div id="menu" class="screen active">
+  <div class="title-block">
+    <h1>POUDREUSE<span class="flake">❄</span></h1>
+    <p>Conjugue vite. Ride encore plus vite.</p>
+  </div>
+  <div class="rider-tag">🏂 Rider : Leila</div>
+  <div class="menu-btns">
+    <button class="big-btn" onclick="UI.show('mountains')">C'est parti ! 🏔️</button>
+    <button class="big-btn secondary" onclick="UI.show('shop')">Boutique 🛹</button>
+    <button class="big-btn secondary" onclick="UI.show('settings')">Réglages ⚙️</button>
+  </div>
+  <div class="wallet">
+    <span>⭐ <span id="menuXP">0</span> XP</span>
+    <span>🪙 <span id="menuCoins">0</span></span>
+    <span class="day-chip" id="dayChip" style="display:none"></span>
+  </div>
+  <div class="missions-box" id="missionsBox">
+    <h3>🎯 MISSIONS DU JOUR</h3>
+    <div id="missionList"></div>
+  </div>
+</div>
+
+<!-- ================= MOUNTAIN SELECT ================= -->
+<div id="mountains" class="screen">
+  <div class="panel">
+    <div class="back-row">
+      <h2>Choisis ta piste</h2>
+      <button class="chip-btn" onclick="UI.show('menu')">← Retour</button>
+    </div>
+    <p class="sub">Gagne des XP pour débloquer les pistes suivantes.</p>
+    <div class="mtn-list" id="mtnList"></div>
+  </div>
+</div>
+
+<!-- ================= SHOP ================= -->
+<div id="shop" class="screen">
+  <div class="panel">
+    <div class="back-row">
+      <h2>Boutique</h2>
+      <button class="chip-btn" onclick="UI.show('menu')">← Retour</button>
+    </div>
+    <p class="sub">🪙 <span id="shopCoins">0</span> pièces — gagne des pièces en réussissant tes tricks !</p>
+    <div class="shop-grid" id="shopGrid"></div>
+  </div>
+</div>
+
+<!-- ================= SETTINGS ================= -->
+<div id="settings" class="screen">
+  <div class="panel">
+    <div class="back-row">
+      <h2>Réglages</h2>
+      <button class="chip-btn" onclick="UI.show('menu')">← Retour</button>
+    </div>
+    <div class="setting-row">
+      <div>Accents obligatoires<small>Sinon « prefere » compte pour « préfère »</small></div>
+      <button class="toggle" id="tglStrict" onclick="Settings.toggle('strict')" aria-label="Accents obligatoires"></button>
+    </div>
+    <div class="setting-row">
+      <div>Indice en anglais<small>Montre la traduction du verbe</small></div>
+      <button class="toggle on" id="tglHint" onclick="Settings.toggle('hint')" aria-label="Indice en anglais"></button>
+    </div>
+    <div class="setting-row">
+      <div>Sons<small>Bips, chocs et fanfares</small></div>
+      <button class="toggle on" id="tglSound" onclick="Settings.toggle('sound')" aria-label="Sons"></button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= GAME ================= -->
+<div id="game" class="screen">
+  <canvas id="cv"></canvas>
+  <div id="hud">
+    <div style="display:flex;gap:8px">
+      <div class="hud-pill" id="scorePill">0 pts</div>
+      <div class="hud-pill" id="streakPill">🔥 0</div>
+      <div class="hud-pill" id="coinPill">🪙 0</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <div class="hud-pill" id="recordPill">🏆 0</div>
+      <div class="hud-pill" id="jumpPill">Saut 1/10</div>
+      <button class="hud-pill" style="pointer-events:auto" onclick="Game.quit()">✕</button>
+    </div>
+  </div>
+  <div id="combo-banner"></div>
+  <div id="trick-burst"><span class="trick-name"></span><span class="trick-pts"></span></div>
+  <div id="reveal-card"><div class="label">La bonne réponse</div><div class="answer"></div></div>
+  <div id="countdown"></div>
+  <div id="prompt-zone">
+    <div class="prompt-card" id="promptCard">
+      <div class="golden-tag" id="goldenTag" style="display:none">✨ VERBE DORÉ ×3 ✨</div>
+      <div class="prompt-tense" id="pTense">PRÉSENT</div>
+      <div class="prompt-verb" id="pVerb">parler</div>
+      <div class="prompt-eng" id="pEng">to speak</div>
+      <div class="prompt-person">➜ <b id="pPerson">nous</b> ______</div>
+    </div>
+    <div id="timerbar"><div id="timerfill"></div></div>
+    <div class="answer-row">
+      <input id="answer" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="tape ici…">
+      <button id="goBtn" onclick="Game.submit()">GO</button>
+    </div>
+    <div class="accent-strip" id="accentStrip"></div>
+  </div>
+</div>
+
+<!-- ================= RESULTS ================= -->
+<div id="results" class="screen">
+  <div class="panel" style="text-align:center">
+    <h2 id="resTitle">Descente terminée ! 🏁</h2>
+    <p class="sub" id="resSub"></p>
+    <div class="stat-grid">
+      <div class="stat"><div class="v" id="resScore">0</div><div class="k">Points</div></div>
+      <div class="stat"><div class="v" id="resAcc">0%</div><div class="k">Précision</div></div>
+      <div class="stat"><div class="v" id="resBest">—</div><div class="k">Meilleur trick</div></div>
+      <div class="stat"><div class="v" id="resCoins">+0 🪙</div><div class="k">Pièces</div></div>
+    </div>
+    <div style="text-align:left">
+      <div class="xp-note"><span id="resXPnote"></span></div>
+      <div class="xp-bar"><div class="xp-fill" id="resXPfill" style="width:0%"></div></div>
+    </div>
+    <div class="review-list" id="reviewList" style="text-align:left"></div>
+    <div id="unlockFlash"></div>
+    <div class="chest-zone" id="chestZone" style="display:none">
+      <div class="chest-label">Descente réussie — tu as gagné un coffre !</div>
+      <button class="chest-btn" id="chestBtn" onclick="Game.openChest()">🎁</button>
+      <div id="chestReveal"></div>
+    </div>
+    <div class="menu-btns" style="width:100%;margin-top:16px">
+      <button class="big-btn" onclick="Game.replay()">Encore ! 🔁</button>
+      <button class="big-btn secondary" onclick="UI.show('mountains')">Autre piste 🏔️</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script src="/js/data.js"></script>
+<script src="/js/audio.js"></script>
+<script src="/js/ui.js"></script>
+<script src="/js/world.js"></script>
+<script src="/js/missions.js"></script>
+<script src="/js/game.js"></script>
+</body>
+</html>
