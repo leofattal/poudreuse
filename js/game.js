@@ -384,5 +384,7 @@ window.addEventListener('cloud-save', e => {          // merge cloud snapshot in
     if(window.Cloud) Cloud.pushSave(P);               // write merged state back immediately
     UI.refreshMenu();
     if(document.getElementById('mountains').classList.contains('active')) UI.buildMountains();
+  } else if(window.Cloud && Cloud.isSignedIn()){
+    Cloud.pushSave(P);                                // no cloud save yet → seed it from local progress
   }
 });
