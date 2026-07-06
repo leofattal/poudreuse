@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:1200px;height:630px;overflow:hidden}
+  .card{
+    position:relative;width:1200px;height:630px;
+    font-family:'Nunito',sans-serif;color:#1E2447;
+    background:linear-gradient(180deg,#232A5C 0%,#5D7BC4 58%,#F2C4CE 100%);
+  }
+  svg.scene{position:absolute;inset:0;width:1200px;height:630px}
+  .content{position:absolute;inset:0;display:flex;align-items:center;padding:0 70px}
+  .left{width:640px}
+  h1{
+    font-family:'Fredoka',sans-serif;font-weight:700;font-size:118px;line-height:.95;
+    color:#fff;letter-spacing:2px;text-shadow:0 8px 0 rgba(30,36,71,.35);
+    transform:rotate(-2deg);
+  }
+  h1 .flake{color:#FFC63D}
+  .tag{
+    margin-top:26px;font-size:33px;font-weight:800;color:#EAF0FF;
+    text-shadow:0 3px 0 rgba(30,36,71,.3);
+  }
+  .chips{margin-top:30px;display:flex;gap:14px}
+  .chip{
+    font-weight:800;font-size:24px;padding:12px 26px;border-radius:999px;
+    box-shadow:0 6px 0 rgba(30,36,71,.28);
+  }
+  .chip.gold{background:#FFC63D;color:#1E2447}
+  .chip.coral{background:#FF5D8F;color:#fff}
+  .url{
+    position:absolute;left:70px;bottom:44px;font-weight:800;font-size:26px;
+    color:#fff;opacity:.92;letter-spacing:.5px;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <svg class="scene" viewBox="0 0 1200 630" preserveAspectRatio="none">
+    <!-- moon -->
+    <circle cx="1000" cy="120" r="58" fill="rgba(255,246,220,.95)"/>
+    <circle cx="1022" cy="112" r="48" fill="#5D7BC4" opacity=".55"/>
+    <!-- far peaks -->
+    <g fill="#8FA6DC">
+      <polygon points="120,470 250,250 380,470"/>
+      <polygon points="330,470 470,220 610,470"/>
+      <polygon points="900,470 1030,240 1160,470"/>
+    </g>
+    <g fill="#F4F8FF" opacity=".85">
+      <polygon points="220,320 250,250 280,320"/>
+      <polygon points="440,300 470,220 500,300"/>
+      <polygon points="1000,320 1030,240 1060,320"/>
+    </g>
+    <!-- mid peaks -->
+    <g fill="#6E86C8">
+      <polygon points="0,500 160,320 320,500"/>
+      <polygon points="600,500 780,300 960,500"/>
+      <polygon points="980,500 1120,330 1260,500"/>
+    </g>
+    <!-- snow ground -->
+    <path d="M0,520 Q300,470 600,510 T1200,500 L1200,630 L0,630 Z" fill="#F4F8FF"/>
+    <path d="M0,520 Q300,470 600,510 T1200,500" fill="none" stroke="#C9D8F0" stroke-width="6"/>
+    <!-- little pines -->
+    <g>
+      <g transform="translate(150,545)"><polygon points="-26,10 26,10 0,-40" fill="#1F4A3D"/><polygon points="-20,-15 20,-15 0,-55" fill="#1F4A3D"/><rect x="-5" y="8" width="10" height="16" fill="#3B2B22"/></g>
+      <g transform="translate(1080,548) scale(1.1)"><polygon points="-26,10 26,10 0,-40" fill="#1F4A3D"/><polygon points="-20,-15 20,-15 0,-55" fill="#1F4A3D"/><rect x="-5" y="8" width="10" height="16" fill="#3B2B22"/></g>
+    </g>
+    <!-- falling snow -->
+    <g fill="#fff" opacity=".85">
+      <circle cx="120" cy="90" r="4"/><circle cx="330" cy="160" r="3"/><circle cx="520" cy="60" r="5"/>
+      <circle cx="700" cy="130" r="3"/><circle cx="860" cy="70" r="4"/><circle cx="180" cy="240" r="3"/>
+      <circle cx="600" cy="220" r="4"/><circle cx="960" cy="200" r="3"/><circle cx="1120" cy="150" r="4"/>
+      <circle cx="420" cy="360" r="3"/><circle cx="90" cy="360" r="4"/><circle cx="1150" cy="300" r="3"/>
+    </g>
+
+    <!-- SNOWBOARDER (right side), matches the in-game vector rider -->
+    <g transform="translate(890,430) scale(2.5) rotate(-6)">
+      <!-- fire glow -->
+      <circle cx="0" cy="10" r="60" fill="#FFC63D" opacity=".18"/>
+      <!-- board -->
+      <g transform="rotate(-7)">
+        <rect x="-48" y="22" width="96" height="12" rx="8" fill="#FF5D8F"/>
+        <rect x="-48" y="22" width="96" height="12" rx="8" fill="none" stroke="rgba(30,36,71,.35)" stroke-width="2"/>
+      </g>
+      <!-- legs -->
+      <path d="M-12,20 L-14,-2" stroke="#2B3050" stroke-width="8" stroke-linecap="round"/>
+      <path d="M16,18 L12,-2" stroke="#2B3050" stroke-width="8" stroke-linecap="round"/>
+      <!-- jacket -->
+      <rect x="-16" y="-26" width="32" height="30" rx="10" fill="#6FD8F2" stroke="rgba(30,36,71,.25)" stroke-width="2"/>
+      <!-- arms -->
+      <path d="M-14,-18 L-30,-20" stroke="#6FD8F2" stroke-width="8" stroke-linecap="round"/>
+      <path d="M14,-18 L30,-24" stroke="#6FD8F2" stroke-width="8" stroke-linecap="round"/>
+      <!-- head -->
+      <circle cx="0" cy="-38" r="12" fill="#F5C9A8"/>
+      <!-- hair -->
+      <path d="M10,-38 Q16,-30 13,-20" stroke="#5A3825" stroke-width="3" fill="none"/>
+      <!-- beanie -->
+      <path d="M-12.5,-42 A12.5,12.5 0 0 1 12.5,-42 Z" fill="#FF5D8F"/>
+      <rect x="-12.5" y="-44" width="25" height="5" fill="#FF5D8F"/>
+      <circle cx="0" cy="-54" r="4.5" fill="#FF5D8F"/>
+      <!-- face -->
+      <circle cx="4" cy="-38" r="1.8" fill="#2B3050"/>
+      <circle cx="9" cy="-38" r="1.8" fill="#2B3050"/>
+      <path d="M4,-34.5 Q6.5,-31 9,-34.5" stroke="#2B3050" stroke-width="1.6" fill="none"/>
+    </g>
+  </svg>
+
+  <div class="content">
+    <div class="left">
+      <h1>POUDREUSE<span class="flake"> ❄</span></h1>
+      <div class="tag">Conjugue vite. Ride encore plus vite.</div>
+      <div class="chips">
+        <span class="chip gold">🏂 Snowboard</span>
+        <span class="chip coral">🇫🇷 Conjugaison</span>
+      </div>
+    </div>
+  </div>
+  <div class="url">poudreuse.vercel.app</div>
+</div>
+</body>
+</html>
