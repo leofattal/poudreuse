@@ -17,6 +17,7 @@ const Store = (() => {
 /* ---------------- Player state ---------------- */
 const P = Object.assign({
   xp: 0, coins: 0,
+  riderName: 'Leila',    // display name used for anonymous leaderboard entries
   ownedBoards: ['flamant'], activeBoard: 'flamant',
   weights: {},           // "verb|tense|person" -> miss weight
   best: {},              // mountainId -> best score
@@ -24,7 +25,35 @@ const P = Object.assign({
   missions: { date: '', prog: {}, done: {} },
   settings: { strict:false, hint:true, sound:true },
 }, Store.load());
-function persist(){ Store.save(P); }
+function persist(){
+  P.savedAt = Date.now();
+  Store.save(P);
+  // sync to the cloud when signed in (cloud.js loads later; guarded)
+  if(window.Cloud && window.Cloud.isSignedIn && window.Cloud.isSignedIn()) window.Cloud.queueSave(P);
+}
+
+/* Merge a cloud save snapshot into P without losing local progress:
+   max() on numeric progress, union on owned boards, newer-wins on config. */
+function mergeCloudSave(cloud){
+  if(!cloud || !cloud.data) return false;
+  const c = cloud.data;
+  const cloudNewer = (cloud.updated_at ? Date.parse(cloud.updated_at) : 0) > (P.savedAt || 0);
+  P.xp    = Math.max(P.xp    || 0, c.xp    || 0);
+  P.coins = Math.max(P.coins || 0, c.coins || 0);
+  P.best = P.best || {};
+  Object.entries(c.best || {}).forEach(([k, v]) => { P.best[k] = Math.max(P.best[k] || 0, v || 0); });
+  P.weights = P.weights || {};
+  Object.entries(c.weights || {}).forEach(([k, v]) => { P.weights[k] = Math.max(P.weights[k] || 0, v || 0); });
+  P.ownedBoards = Array.from(new Set([...(P.ownedBoards || []), ...(c.ownedBoards || [])]));
+  if(cloudNewer){
+    if(c.activeBoard) P.activeBoard = c.activeBoard;
+    if(c.settings) P.settings = Object.assign({}, P.settings, c.settings);
+    if(c.riderName) P.riderName = c.riderName;
+    if(c.day) P.day = c.day;
+    if(c.missions) P.missions = c.missions;
+  }
+  return true;
+}
 
 /* ---------------- Verb engine ---------------- */
 const PRESENT_ER = ['e','es','e','ons','ez','ent'];

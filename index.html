@@ -16,9 +16,10 @@
     <h1>POUDREUSE<span class="flake">❄</span></h1>
     <p>Conjugue vite. Ride encore plus vite.</p>
   </div>
-  <div class="rider-tag">🏂 Rider : Leila</div>
+  <div class="rider-tag">🏂 Rider : <span id="riderName">Leila</span></div>
   <div class="menu-btns">
     <button class="big-btn" onclick="UI.show('mountains')">C'est parti ! 🏔️</button>
+    <button class="big-btn secondary" onclick="UI.show('leaderboard')">Classement 🏆</button>
     <button class="big-btn secondary" onclick="UI.show('shop')">Boutique 🛹</button>
     <button class="big-btn secondary" onclick="UI.show('settings')">Réglages ⚙️</button>
   </div>
@@ -76,6 +77,26 @@
       <div>Sons<small>Bips, chocs et fanfares</small></div>
       <button class="toggle on" id="tglSound" onclick="Settings.toggle('sound')" aria-label="Sons"></button>
     </div>
+    <div class="setting-row" id="authRow">
+      <div class="auth-info" id="authInfo">
+        <img id="authAvatar" alt="" style="display:none">
+        <div><span id="authTitle">Compte Google</span><small id="authSub">Sauvegarde ta progression et publie ton nom au classement.</small></div>
+      </div>
+      <button class="chip-btn" id="authBtn" onclick="UI.auth()">Se connecter</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= LEADERBOARD ================= -->
+<div id="leaderboard" class="screen">
+  <div class="panel">
+    <div class="back-row">
+      <h2>Classement 🏆</h2>
+      <button class="chip-btn" onclick="UI.show('menu')">← Retour</button>
+    </div>
+    <p class="sub">Les meilleurs scores, piste par piste.</p>
+    <div class="lb-tabs" id="lbTabs"></div>
+    <div class="lb-list" id="lbList"></div>
   </div>
 </div>
 
@@ -137,8 +158,10 @@
       <button class="chest-btn" id="chestBtn" onclick="Game.openChest()">🎁</button>
       <div id="chestReveal"></div>
     </div>
+    <div class="lb-submit" id="lbSubmit"></div>
     <div class="menu-btns" style="width:100%;margin-top:16px">
       <button class="big-btn" onclick="Game.replay()">Encore ! 🔁</button>
+      <button class="big-btn secondary" onclick="UI.show('leaderboard')">Classement 🏆</button>
       <button class="big-btn secondary" onclick="UI.show('mountains')">Autre piste 🏔️</button>
     </div>
   </div>
@@ -151,5 +174,6 @@
 <script src="/js/world.js"></script>
 <script src="/js/missions.js"></script>
 <script src="/js/game.js"></script>
+<script type="module" src="/js/cloud.js"></script>
 </body>
 </html>

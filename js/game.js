@@ -285,7 +285,44 @@ const Game = (() => {
       rl.innerHTML = '<h3 style="color:#4EC9A0">Aucune erreur — chapeau ! 🎩</h3>';
     }
 
+    buildSubmit(mtn.id, score, acc);
+
     UI.show('results');
+  }
+
+  /* leaderboard submission UI on the results screen */
+  function buildSubmit(mtnId, sc, acc){
+    const box = $('lbSubmit');
+    if(!box) return;
+    if(!window.Cloud){ box.innerHTML = ''; return; }   // offline → nothing to publish to
+    if(Cloud.isSignedIn()){
+      box.innerHTML = `<div class="lb-status">📡 Publication de ton score…</div>`;
+      Cloud.submitScore({ mountainId: mtnId, score: sc, accuracy: acc, board: P.activeBoard })
+        .then(res => {
+          box.innerHTML = res && res.skipped
+            ? `<div class="lb-status">🏆 Ton record du classement (${res.best}) tient bon !</div>`
+            : `<div class="lb-status ok">🏆 Score publié au classement !</div>`;
+        })
+        .catch(e => { console.warn(e); box.innerHTML = `<div class="lb-status">Publication impossible pour l'instant.</div>`; });
+      return;
+    }
+    // anonymous → confirm a display name, then publish
+    const nm = P.riderName || 'Leila';
+    box.innerHTML = `
+      <div class="lb-status">Publie ton score au classement :</div>
+      <div class="lb-submit-row">
+        <input id="lbName" maxlength="20" autocomplete="off" spellcheck="false" value="${escapeHTML(nm)}" placeholder="ton nom">
+        <button id="lbPublish" class="chip-btn go">Publier 🏆</button>
+      </div>`;
+    const btn = $('lbPublish'), inp = $('lbName');
+    btn.onclick = () => {
+      const name = (inp.value || '').trim().slice(0, 20) || 'Rider';
+      P.riderName = name; persist();
+      btn.disabled = inp.disabled = true; btn.textContent = 'Publication…';
+      Cloud.submitScore({ mountainId: mtnId, score: sc, accuracy: acc, board: P.activeBoard, displayName: name })
+        .then(() => { box.innerHTML = `<div class="lb-status ok">🏆 Publié sous « ${escapeHTML(name)} » !</div>`; Sfx.click(); })
+        .catch(e => { console.warn(e); btn.disabled = inp.disabled = false; btn.textContent = 'Publier 🏆'; toast('Publication impossible.'); });
+    };
   }
 
   function rollChest(){
@@ -332,3 +369,20 @@ const Game = (() => {
 /* ---------------- boot ---------------- */
 Settings.sync();
 UI.refreshMenu();
+
+/* ---------------- cloud glue ----------------
+   cloud.js is an ES module and can't see P/UI/Game, so it dispatches
+   window events; this classic-scope code reacts and mutates game state. */
+window.addEventListener('cloud-ready', () => { UI.refreshMenu(); Settings.syncAuth(); });
+window.addEventListener('cloud-auth',  () => { UI.refreshMenu(); Settings.syncAuth(); });
+window.addEventListener('cloud-signin', () => {
+  if(window.Cloud && Cloud.isSignedIn()) toast(`Connectée — salut ${Cloud.nameOf()} ! 👋`);
+});
+window.addEventListener('cloud-save', e => {          // merge cloud snapshot into local P
+  if(mergeCloudSave(e.detail)){
+    persist();                                        // writes merged state locally + re-queues cloud push
+    if(window.Cloud) Cloud.pushSave(P);               // write merged state back immediately
+    UI.refreshMenu();
+    if(document.getElementById('mountains').classList.contains('active')) UI.buildMountains();
+  }
+});
