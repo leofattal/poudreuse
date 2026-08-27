@@ -38,7 +38,7 @@ const UI = {
       tabs.appendChild(b);
     });
     const list = document.getElementById('lbList');
-    const mtn = MOUNTAINS[mtnId];
+    const mtn = MTN(mtnId);
     if(!window.Cloud){
       list.innerHTML = `<div class="lb-empty">⛄ Classement indisponible hors ligne.</div>`;
       return;
@@ -75,6 +75,7 @@ const UI = {
     if(Cloud.isSignedIn()) Cloud.signOut();
     else Cloud.signInWithGoogle().catch(e => { console.warn(e); toast('Connexion Google impossible.'); });
   },
+  selBoost: null,                                // boost picked for the next run
   buildMountains(){
     const box = document.getElementById('mtnList'); box.innerHTML = '';
     MOUNTAINS.forEach(m => {
@@ -91,24 +92,76 @@ const UI = {
       if(!locked) card.onclick = () => Game.start(m.id);
       box.appendChild(card);
     });
+    UI.buildBoostBar();
+  },
+  buildBoostBar(){
+    const bar = document.getElementById('boostBar');
+    const owned = Object.entries(BOOSTS).filter(([id]) => (P.boosts[id] || 0) > 0);
+    if(!owned.length){ bar.innerHTML = ''; UI.selBoost = null; return; }
+    if(UI.selBoost && !(P.boosts[UI.selBoost] > 0)) UI.selBoost = null;
+    bar.innerHTML = `<div class="boost-title">⚡ Ton atout pour la descente :</div>
+      <div class="boost-chips">` +
+      owned.map(([id, b]) =>
+        `<button class="boost-chip${UI.selBoost === id ? ' sel' : ''}" data-b="${id}">
+          ${b.icon} ${b.name} <span class="ct">×${P.boosts[id]}</span></button>`).join('') +
+      `</div>`;
+    bar.querySelectorAll('.boost-chip').forEach(btn => {
+      btn.onclick = () => {
+        const id = btn.dataset.b;
+        UI.selBoost = UI.selBoost === id ? null : id;
+        Sfx.click();
+        UI.buildBoostBar();
+      };
+    });
   },
   buildShop(){
     document.getElementById('shopCoins').textContent = P.coins;
     const grid = document.getElementById('shopGrid'); grid.innerHTML = '';
-    Object.entries(BOARDS).forEach(([id, b]) => {
-      const owned = P.ownedBoards.includes(id);
-      const active = P.activeBoard === id;
+    const section = txt => {
+      const h = document.createElement('h3');
+      h.className = 'shop-sec'; h.textContent = txt;
+      grid.appendChild(h);
+    };
+    // gear (boards + outfits) share the buy/equip pattern
+    const gearCard = (id, item, ownedList, activeKey, swatch) => {
+      const owned = P[ownedList].includes(id);
+      const active = P[activeKey] === id;
       const card = document.createElement('div');
       card.className = 'board-card' + (active ? ' owned-active' : '');
       card.innerHTML = `
-        <h4>${b.name}</h4>
-        <div class="board-swatch" style="background:linear-gradient(90deg,${b.c1},${b.c2})"></div>
+        <h4>${item.name}</h4>
+        ${swatch}
         ${owned
           ? `<button class="use" ${active?'disabled':''}>${active?'Équipée ✓':'Équiper'}</button>`
-          : `<button ${P.coins < b.price ? 'disabled':''}>🪙 ${b.price}</button>`}`;
+          : `<button ${P.coins < item.price ? 'disabled':''}>🪙 ${item.price}</button>`}`;
       card.querySelector('button').onclick = () => {
-        if(owned){ P.activeBoard = id; }
-        else if(P.coins >= b.price){ P.coins -= b.price; P.ownedBoards.push(id); P.activeBoard = id; Sfx.fanfare(); }
+        if(owned){ P[activeKey] = id; }
+        else if(P.coins >= item.price){ P.coins -= item.price; P[ownedList].push(id); P[activeKey] = id; Sfx.fanfare(); }
+        persist(); UI.buildShop();
+      };
+      grid.appendChild(card);
+    };
+    section('Planches 🛹');
+    Object.entries(BOARDS).forEach(([id, b]) => gearCard(id, b, 'ownedBoards', 'activeBoard',
+      `<div class="board-swatch" style="background:linear-gradient(90deg,${b.c1},${b.c2})"></div>`));
+    section('Tenues 🧥');
+    Object.entries(OUTFITS).forEach(([id, o]) => gearCard(id, o, 'ownedOutfits', 'activeOutfit',
+      `<div class="board-swatch" style="background:linear-gradient(90deg,${o.jacket} 60%,${o.beanie} 60%)"></div>`));
+    section('Atouts ⚡ (à usage unique)');
+    Object.entries(BOOSTS).forEach(([id, b]) => {
+      const n = P.boosts[id] || 0;
+      const card = document.createElement('div');
+      card.className = 'board-card';
+      card.innerHTML = `
+        <div class="boost-big">${b.icon}${n ? `<span class="boost-count">×${n}</span>` : ''}</div>
+        <h4>${b.name}</h4>
+        <p class="boost-desc">${b.desc}</p>
+        <button ${P.coins < b.price || n >= 9 ? 'disabled':''}>${n >= 9 ? 'Max ×9' : '🪙 ' + b.price}</button>`;
+      card.querySelector('button').onclick = () => {
+        if(P.coins < b.price || (P.boosts[id] || 0) >= 9) return;
+        P.coins -= b.price;
+        P.boosts[id] = (P.boosts[id] || 0) + 1;
+        Sfx.coin(1);
         persist(); UI.buildShop();
       };
       grid.appendChild(card);

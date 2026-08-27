@@ -7,8 +7,13 @@ const World = (() => {
   let W = 0, H = 0, t = 0, scroll = 0;
   let speed = 3, shakeI = 0;     // world scroll speed, screen shake intensity
   const flakes = [], sprays = [], confs = [], fcoins = [];
-  let farPeaks = [], midPeaks = [], trees = [];
+  let farPeaks = [], midPeaks = [], trees = [], stars = [];
   const FIRE_COLORS = [null, '255,198,61', '255,93,143', '139,92,246'];
+
+  /* per-piste sky theme (default = the menu's dusk) */
+  const DEFAULT_THEME = { sky:['#232A5C','#5D7BC4','#F2C4CE'], peaks:['#8FA6DC','#6E86C8'], sun:false, stars:false, aurora:false };
+  let theme = DEFAULT_THEME;
+  function setTheme(th){ theme = Object.assign({}, DEFAULT_THEME, th || {}); }
 
   // rider state
   const rider = {
@@ -38,6 +43,8 @@ const World = (() => {
       trees.push({x, s: rnd(.5,1.1), layer: Math.random() < .5 ? 0 : 1});
     flakes.length = 0;
     for(let i=0;i<90;i++) flakes.push({x:Math.random()*W, y:Math.random()*H, r:rnd(1,3.4)*devicePixelRatio, v:rnd(.4,1.4)});
+    stars = [];
+    for(let i=0;i<70;i++) stars.push({x:Math.random()*W, y:Math.random()*H*.55, r:rnd(.8,2.2)*devicePixelRatio, ph:rnd(0,6.28)});
   }
 
   function terrainY(x){
@@ -50,6 +57,7 @@ const World = (() => {
   function drawRider(px, py){
     const s = Math.min(W,H) * .00034;   // scale unit
     const board = BOARDS[P.activeBoard] || BOARDS.flamant;
+    const fit = OUTFITS[P.activeOutfit] || OUTFITS.givre;
     ctx.save();
     ctx.translate(px, py);
     ctx.rotate(rider.rot);
@@ -89,12 +97,12 @@ const World = (() => {
     ctx.beginPath(); ctx.moveTo(16, 18); ctx.lineTo(12, -2); ctx.stroke();
 
     // body (jacket)
-    ctx.fillStyle = '#6FD8F2';
+    ctx.fillStyle = fit.jacket;
     ctx.beginPath(); ctx.roundRect(-16, -26, 32, 30, 10); ctx.fill();
     ctx.strokeStyle = 'rgba(30,36,71,.25)'; ctx.lineWidth = 2; ctx.stroke();
 
     // arms
-    ctx.strokeStyle = '#6FD8F2'; ctx.lineWidth = 8;
+    ctx.strokeStyle = fit.jacket; ctx.lineWidth = 8;
     const wob = rider.mode === 'air' ? -14 : Math.sin(t*.1)*3;
     ctx.beginPath(); ctx.moveTo(-14,-18); ctx.lineTo(-30, -6 + wob); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(14,-18); ctx.lineTo(30, -10 + wob); ctx.stroke();
@@ -103,7 +111,7 @@ const World = (() => {
     ctx.fillStyle = '#F5C9A8';
     ctx.beginPath(); ctx.arc(0, -38, 12, 0, 7); ctx.fill();
     // beanie
-    ctx.fillStyle = '#FF5D8F';
+    ctx.fillStyle = fit.beanie;
     ctx.beginPath(); ctx.arc(0, -42, 12.5, Math.PI, 0); ctx.fill();
     ctx.fillRect(-12.5, -44, 25, 5);
     ctx.beginPath(); ctx.arc(0, -54, 4.5, 0, 7); ctx.fill(); // pompom
@@ -143,30 +151,64 @@ const World = (() => {
       shakeI *= .88;
     } else shakeI = 0;
 
-    // sky handled by CSS body gradient behind transparent canvas? Canvas covers it,
-    // so paint the dusk gradient here.
+    // themed sky
     const sky = ctx.createLinearGradient(0,0,0,H);
-    sky.addColorStop(0,'#232A5C'); sky.addColorStop(.55,'#5D7BC4'); sky.addColorStop(1,'#F2C4CE');
+    sky.addColorStop(0,theme.sky[0]); sky.addColorStop(.55,theme.sky[1]); sky.addColorStop(1,theme.sky[2]);
     ctx.fillStyle = sky; ctx.fillRect(0,0,W,H);
 
-    // moon
-    ctx.fillStyle = 'rgba(255,246,220,.9)';
-    ctx.beginPath(); ctx.arc(W*.82, H*.16, Math.min(W,H)*.045, 0, 7); ctx.fill();
-    ctx.fillStyle = 'rgba(93,123,196,.5)';
-    ctx.beginPath(); ctx.arc(W*.82 + Math.min(W,H)*.018, H*.155, Math.min(W,H)*.038, 0, 7); ctx.fill();
+    // twinkling stars (night themes)
+    if(theme.stars){
+      stars.forEach(s => {
+        ctx.fillStyle = `rgba(255,255,255,${.35 + .5*Math.abs(Math.sin(t*.02 + s.ph))})`;
+        ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 7); ctx.fill();
+      });
+    }
+
+    // aurora borealis (the hardest pistes)
+    if(theme.aurora){
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      const bands = [['110,230,180',.14],['140,120,240',.10],['110,200,240',.08]];
+      bands.forEach(([col, a], bi) => {
+        const yb = H*(.10 + bi*.07);
+        ctx.beginPath();
+        ctx.moveTo(-10, yb);
+        for(let x = 0; x <= W+20; x += 40*devicePixelRatio)
+          ctx.lineTo(x, yb + Math.sin(x*.002 + t*.012 + bi*2)*H*.03);
+        const g = ctx.createLinearGradient(0, yb - H*.12, 0, yb + H*.10);
+        g.addColorStop(0, `rgba(${col},0)`); g.addColorStop(.5, `rgba(${col},${a})`); g.addColorStop(1, `rgba(${col},0)`);
+        ctx.strokeStyle = g; ctx.lineWidth = H*.11; ctx.stroke();
+      });
+      ctx.restore();
+    }
+
+    // sun or moon
+    if(theme.sun){
+      const r = Math.min(W,H)*.05;
+      const g = ctx.createRadialGradient(W*.82, H*.16, r*.4, W*.82, H*.16, r*3);
+      g.addColorStop(0,'rgba(255,235,150,.85)'); g.addColorStop(1,'rgba(255,235,150,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(W*.82, H*.16, r*3, 0, 7); ctx.fill();
+      ctx.fillStyle = '#FFEFB0';
+      ctx.beginPath(); ctx.arc(W*.82, H*.16, r, 0, 7); ctx.fill();
+    } else {
+      ctx.fillStyle = 'rgba(255,246,220,.9)';
+      ctx.beginPath(); ctx.arc(W*.82, H*.16, Math.min(W,H)*.045, 0, 7); ctx.fill();
+      ctx.fillStyle = theme.sky[1] + 'B0';
+      ctx.beginPath(); ctx.arc(W*.82 + Math.min(W,H)*.018, H*.155, Math.min(W,H)*.038, 0, 7); ctx.fill();
+    }
 
     // far peaks (slow parallax)
-    ctx.fillStyle = '#8FA6DC';
+    ctx.fillStyle = theme.peaks[0];
     farPeaks.forEach(p => {
       const x = ((p.x - scroll*.15) % (W + 600) + W + 600) % (W + 600) - 300;
       ctx.beginPath(); ctx.moveTo(x - p.w/2, H*.66); ctx.lineTo(x, H*.66 - p.h); ctx.lineTo(x + p.w/2, H*.66); ctx.closePath(); ctx.fill();
       ctx.fillStyle = 'rgba(244,248,255,.85)';
       ctx.beginPath(); ctx.moveTo(x - p.w*.14, H*.66 - p.h*.72); ctx.lineTo(x, H*.66 - p.h); ctx.lineTo(x + p.w*.14, H*.66 - p.h*.72); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = '#8FA6DC';
+      ctx.fillStyle = theme.peaks[0];
     });
 
     // mid peaks
-    ctx.fillStyle = '#6E86C8';
+    ctx.fillStyle = theme.peaks[1];
     midPeaks.forEach(p => {
       const x = ((p.x - scroll*.35) % (W + 600) + W + 600) % (W + 600) - 300;
       ctx.beginPath(); ctx.moveTo(x - p.w/2, H*.74); ctx.lineTo(x, H*.74 - p.h); ctx.lineTo(x + p.w/2, H*.74); ctx.closePath(); ctx.fill();
@@ -319,5 +361,5 @@ const World = (() => {
   function shake(v){ shakeI = Math.max(shakeI, v); }
 
   resize(); requestAnimationFrame(frame);
-  return { jump, tumble, setFire, setSpeed, shake, confetti, coinBurst };
+  return { jump, tumble, setFire, setSpeed, setTheme, shake, confetti, coinBurst };
 })();

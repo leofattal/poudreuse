@@ -43,6 +43,7 @@
   <div class="rider-tag">🏂 Rider : <span id="riderName">Leila</span></div>
   <div class="menu-btns">
     <button class="big-btn" onclick="UI.show('mountains')">C'est parti ! 🏔️</button>
+    <button class="big-btn secondary" onclick="Game.practice()">Entraînement 🎯</button>
     <button class="big-btn secondary" onclick="UI.show('leaderboard')">Classement 🏆</button>
     <button class="big-btn secondary" onclick="UI.show('shop')">Boutique 🛹</button>
     <button class="big-btn secondary" onclick="UI.show('settings')">Réglages ⚙️</button>
@@ -66,6 +67,7 @@
       <button class="chip-btn" onclick="UI.show('menu')">← Retour</button>
     </div>
     <p class="sub">Gagne des XP pour débloquer les pistes suivantes.</p>
+    <div id="boostBar"></div>
     <div class="mtn-list" id="mtnList"></div>
   </div>
 </div>
@@ -134,6 +136,7 @@
       <div class="hud-pill" id="coinPill">🪙 0</div>
     </div>
     <div style="display:flex;gap:8px">
+      <div class="hud-pill" id="boostPill" style="display:none"></div>
       <div class="hud-pill" id="recordPill">🏆 0</div>
       <div class="hud-pill" id="jumpPill">Saut 1/10</div>
       <button class="hud-pill" style="pointer-events:auto" onclick="Game.quit()">✕</button>

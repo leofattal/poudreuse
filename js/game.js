@@ -2,17 +2,21 @@
    GAME LOOP
 ===================================================================== */
 const Game = (() => {
-  const JUMPS = 10;
   const TIERS = [                                    // combo escalation
     { at:3, mult:2, name:'EN FEU ×2 !',      cls:'t1', speed:6.5 },
     { at:5, mult:3, name:'SUPERNOVA ×3 !!',  cls:'t2', speed:8.5 },
     { at:8, mult:4, name:'LÉGENDAIRE ×4 !!!', cls:'t3', speed:10.5 },
   ];
-  let mtn = null, jumpN = 0, score = 0, streak = 0, correct = 0;
+  const TRICKS = [                                   // one name picked per landing, by speed tier
+    ['OLLIE !','NOSE GRAB !','TAIL SLIDE !'],
+    ['MÉTHOD 360 !','INDY 360 !','ROCKET AIR !'],
+    ['BACKFLIP 720 !','RODÉO 900 !','MISTY FLIP !'],
+  ];
+  let mtn = null, jumps = 10, jumpN = 0, score = 0, streak = 0, correct = 0;
   let current = null, deadline = 0, timerId = null, clockMs = 0;
   let bestTrick = null, misses = [], answered = false;
   let runCoins = 0, backflips = 0, goldensHit = 0, lastTier = 0;
-  let chest = null;
+  let chest = null, boost = null;
 
   const $ = id => document.getElementById(id);
 
@@ -27,10 +31,12 @@ const Game = (() => {
 
   function pickQuestion(){
     const pool = [];
+    // practice drills what you miss: base weight shrinks, miss weight dominates
+    const base = mtn.practice ? .25 : 1, boostW = mtn.practice ? 4 : 2;
     mtn.verbs.forEach(v => {
       mtn.tenses.forEach(tense => {
         for(let i=0;i<6;i++){
-          const w = 1 + (P.weights[weightKey(v,tense,i)] || 0) * 2;
+          const w = base + (P.weights[weightKey(v,tense,i)] || 0) * boostW;
           pool.push({v, tense, i, w});
         }
       });
@@ -41,16 +47,41 @@ const Game = (() => {
     return pool[pool.length-1];
   }
 
+  /* practice = pseudo-piste over everything already unlocked, relaxed clock */
+  function practiceMtn(){
+    const open = MOUNTAINS.filter(m => m.xpReq <= P.xp);
+    return {
+      id:'practice', practice:true, icon:'🎯', color:'#8B5CF6',
+      name:'Entraînement', desc:'Révision en douceur',
+      verbs: Array.from(new Set(open.flatMap(m => m.verbs))),
+      tenses: Array.from(new Set(open.flatMap(m => m.tenses))),
+      clock: 25,
+    };
+  }
+
   function start(mtnId){
-    mtn = MOUNTAINS[mtnId];
+    mtn = mtnId === 'practice' ? practiceMtn() : MTN(mtnId);
+    jumps = mtn.practice ? 8 : 10;
     jumpN = 0; score = 0; streak = 0; correct = 0; bestTrick = null; misses = [];
     runCoins = 0; backflips = 0; goldensHit = 0; lastTier = 0; chest = null;
+    // consume the boost picked on the piste screen
+    boost = null;
+    if(!mtn.practice && UI.selBoost && (P.boosts[UI.selBoost] || 0) > 0){
+      boost = UI.selBoost;
+      P.boosts[boost]--; persist();
+    }
+    UI.selBoost = null;
+    const bp = $('boostPill');
+    bp.style.display = boost ? '' : 'none';
+    if(boost) bp.textContent = BOOSTS[boost].icon + ' ' + BOOSTS[boost].name;
     UI.show('game');
+    World.setTheme(mtn.theme || null);
     World.setFire(0); World.setSpeed(3.5);
     $('recordPill').classList.remove('beaten');
     updateHUD();
     countdown(3);
   }
+  function practice(){ start('practice'); }
 
   function countdown(n){
     const cd = $('countdown');
@@ -64,15 +95,21 @@ const Game = (() => {
   }
 
   function nextJump(){
-    if(jumpN >= JUMPS) return finish();
+    if(jumpN >= jumps) return finish();
     jumpN++;
     updateHUD();
     current = pickQuestion();
     answered = false;
     current.golden = Math.random() < .12;            // ✨ 1-in-8ish golden verb, ×3 points
-    const form = conjugate(current.v, current.tense, current.i);
-    current.form = form;
     current.pr = pickPronoun(current.i);
+    if(current.tense === 'passé composé'){
+      const pc = passeCompose(current.v, current.i, current.pr);
+      current.form = pc.form; current.accept = pc.accept;
+    } else {
+      current.form = conjugate(current.v, current.tense, current.i);
+      current.accept = [current.form];
+    }
+    const form = current.form;
 
     $('pTense').textContent = current.tense.toUpperCase();
     $('pVerb').textContent = current.v;
@@ -88,6 +125,8 @@ const Game = (() => {
     const inp = $('answer'); inp.value = ''; inp.focus();
 
     clockMs = mtn.clock * 1000;
+    if(current.tense === 'passé composé') clockMs += 4000;  // two words to type
+    if(boost === 'chrono') clockMs += 3000;
     deadline = performance.now() + clockMs;
     clearInterval(timerId);
     timerId = setInterval(() => {
@@ -105,7 +144,7 @@ const Game = (() => {
     answered = true;
     clearInterval(timerId);
     const inp = $('answer');
-    const ok = !timedOut && isCorrect(inp.value, current.form);
+    const ok = !timedOut && current.accept.some(f => isCorrect(inp.value, f));
     const key = weightKey(current.v, current.tense, current.i);
     $('prompt-zone').classList.remove('active');
 
@@ -113,10 +152,11 @@ const Game = (() => {
       correct++;
       const elapsed = clockMs - (deadline - performance.now());
       const frac = elapsed / clockMs;
-      let trick, pts, spins;
-      if(frac < .35){ trick = 'BACKFLIP 720 !'; pts = 120; spins = 2; backflips++; Missions.event('backflip'); }
-      else if(frac < .7){ trick = 'MÉTHOD 360 !'; pts = 70; spins = 1; }
-      else { trick = 'OLLIE !'; pts = 40; spins = 0; }
+      let pts, spins;
+      if(frac < .35){ pts = 120; spins = 2; backflips++; Missions.event('backflip'); }
+      else if(frac < .7){ pts = 70; spins = 1; }
+      else { pts = 40; spins = 0; }
+      const trick = TRICKS[spins][Math.floor(Math.random()*TRICKS[spins].length)];
       streak++;
       Missions.event('land');
       Missions.event('combo', streak);
@@ -147,28 +187,36 @@ const Game = (() => {
       showBurst(trick + tag, '+' + pts + ' pts');
 
       // coins fly to the pill 🪙
-      const earn = (3 + tierFor(streak)) + (current.golden ? 10 : 0) + (spins === 2 ? 2 : 0);
+      let earn = (3 + tierFor(streak)) + (current.golden ? 10 : 0) + (spins === 2 ? 2 : 0);
+      if(boost === 'aimant') earn *= 2;
+      runCoins += earn;               // credit up front — the flight is pure decoration
       let flown = 0;
       World.coinBurst(Math.min(earn, 9), () => {
-        flown++; runCoins++;
+        flown++;
         Sfx.coin(flown);
         const pill = $('coinPill');
-        pill.textContent = '🪙 ' + runCoins;
         pill.classList.add('bump'); setTimeout(()=>pill.classList.remove('bump'), 90);
       });
-      runCoins += Math.max(0, earn - Math.min(earn, 9)); // remainder without animation
 
       if(P.weights[key]) P.weights[key] = Math.max(0, P.weights[key] - 1);
     } else {
-      streak = 0; lastTier = 0;
-      World.setFire(0); World.setSpeed(3.5);
+      const shielded = boost === 'bouclier';
+      if(shielded){                                  // 🛡️ combo survives, boost is spent
+        boost = null; $('boostPill').style.display = 'none';
+        World.confetti(16, .3, .5);
+        showBurst('BOUCLIER ! 🛡️', 'combo sauvé');
+        Sfx.golden();
+      } else {
+        streak = 0; lastTier = 0;
+        World.setFire(0); World.setSpeed(3.5);
+        Sfx.miss();
+        showBurst('RATÉ…', '+0 pts');
+      }
       // still do the trick — timing still decides which — but no points
       const elapsed = clockMs - Math.max(0, deadline - performance.now());
       const frac = Math.min(1, elapsed / clockMs);
       const spins = timedOut ? 0 : (frac < .35 ? 2 : frac < .7 ? 1 : 0);
       World.jump(spins);
-      Sfx.miss();
-      showBurst('RATÉ…', '+0 pts');
       P.weights[key] = (P.weights[key] || 0) + 1.5;
       misses.push(current);
       const rc = $('reveal-card');
@@ -204,7 +252,8 @@ const Game = (() => {
     $('streakPill').textContent = '🔥 ' + streak;
     $('streakPill').classList.toggle('fire', streak >= 3);
     $('coinPill').textContent = '🪙 ' + runCoins;
-    $('jumpPill').textContent = 'Saut ' + Math.min(Math.max(jumpN,1), JUMPS) + '/' + JUMPS;
+    $('jumpPill').textContent = 'Saut ' + Math.min(Math.max(jumpN,1), jumps) + '/' + jumps;
+    if(mtn.practice){ $('recordPill').textContent = '🎯 révision'; return; }
     const rec = P.best[mtn.id] || 0;
     $('recordPill').textContent = '🏆 ' + (score > rec && rec > 0 ? score : rec);
     if(rec > 0 && score > rec){ $('recordPill').classList.add('beaten'); }
@@ -214,14 +263,14 @@ const Game = (() => {
     clearInterval(timerId);
     World.setFire(0); World.setSpeed(3);
 
-    const acc = Math.round(correct / JUMPS * 100);
+    const acc = Math.round(correct / jumps * 100);
     const isNewDay = Daily.touch();
     const dayMult = Daily.mult();
     const coinsEarned = Math.round((runCoins + (acc === 100 ? 40 : 0)) * dayMult);
     const xpBefore = P.xp;
-    const xpEarned = Math.round(score / 8);
-    const prevBest = P.best[mtn.id] || 0;
-    const newRecord = score > prevBest;
+    const xpEarned = Math.round(score / (mtn.practice ? 16 : 8));  // practice: half XP
+    const prevBest = mtn.practice ? 0 : (P.best[mtn.id] || 0);
+    const newRecord = !mtn.practice && score > prevBest;
     if(newRecord) P.best[mtn.id] = score;
     P.coins += coinsEarned;
     P.xp += xpEarned;
@@ -231,7 +280,8 @@ const Game = (() => {
     if(acc === 100) Missions.event('perfect');
 
     $('resTitle').textContent =
-      newRecord && prevBest > 0 ? '🏆 NOUVEAU RECORD ! 🏆'
+      mtn.practice ? (acc === 100 ? 'Révision parfaite ! 🎯' : 'Entraînement terminé 🎯')
+      : newRecord && prevBest > 0 ? '🏆 NOUVEAU RECORD ! 🏆'
       : acc === 100 ? 'DESCENTE PARFAITE ! 🏆'
       : acc >= 70 ? 'Belle descente ! 🏁' : 'Descente terminée 🏁';
     $('resSub').textContent = mtn.name + ' · ' + mtn.desc +
@@ -294,6 +344,7 @@ const Game = (() => {
   function buildSubmit(mtnId, sc, acc){
     const box = $('lbSubmit');
     if(!box) return;
+    if(mtnId === 'practice'){ box.innerHTML = ''; return; }  // practice stays off the leaderboard
     if(!window.Cloud){ box.innerHTML = ''; return; }   // offline → nothing to publish to
     if(Cloud.isSignedIn()){
       box.innerHTML = `<div class="lb-status">📡 Publication de ton score…</div>`;
@@ -357,13 +408,18 @@ const Game = (() => {
   }
 
   function replay(){ start(mtn.id); }
-  function quit(){ clearInterval(timerId); $('prompt-zone').classList.remove('active'); UI.show('menu'); }
+  function quit(){
+    clearInterval(timerId);
+    $('prompt-zone').classList.remove('active');
+    $('boostPill').style.display = 'none';
+    UI.show('menu');
+  }
 
   document.getElementById('answer').addEventListener('keydown', e => {
     if(e.key === 'Enter'){ e.preventDefault(); submit(false); }
   });
 
-  return { start, submit: () => submit(false), replay, quit, openChest };
+  return { start, practice, submit: () => submit(false), replay, quit, openChest };
 })();
 
 /* ---------------- boot ---------------- */

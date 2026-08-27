@@ -81,6 +81,24 @@ h1,h2,h3,.display{font-family:'Fredoka',sans-serif}
 .mtn-info p{font-size:13.5px;color:#6B7399;font-weight:700}
 .mtn-info .lock-note{color:var(--coral-dark)}
 .shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+.shop-sec{grid-column:1/-1;font-size:18px;margin-top:6px}
+.shop-sec:first-child{margin-top:0}
+.boost-big{font-size:40px;position:relative;line-height:1.2}
+.boost-count{
+  position:absolute;transform:translate(2px,-4px);background:var(--coral);color:#fff;
+  font-family:'Fredoka',sans-serif;font-size:13px;font-weight:600;padding:1px 7px;border-radius:999px;
+}
+.boost-desc{font-size:12.5px;font-weight:700;color:#6B7399;margin-top:4px;line-height:1.35}
+#boostBar{margin-bottom:14px}
+.boost-title{font-weight:800;font-size:14px;color:#6B7399;margin-bottom:8px}
+.boost-chips{display:flex;gap:8px;flex-wrap:wrap}
+.boost-chip{
+  background:#EEF2FC;color:var(--ink);font-weight:800;font-size:14px;
+  padding:8px 14px;border-radius:999px;border:3px solid transparent;
+}
+.boost-chip .ct{color:#8A92B5}
+.boost-chip.sel{border-color:var(--coral);background:#FFF1F5}
+.boost-chip.sel .ct{color:var(--coral-dark)}
 .board-card{background:#F5F8FF;border-radius:18px;padding:14px;text-align:center;border:3px solid transparent}
 .board-card.owned-active{border-color:var(--mint)}
 .board-swatch{height:26px;border-radius:999px;margin:10px 0}

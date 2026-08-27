@@ -29,7 +29,7 @@ const Daily = (() => {
 const Missions = (() => {
   const POOL = [
     {id:'land12',  txt:'Réussis 12 sauts',            n:12, reward:30, ev:'land'},
-    {id:'back4',   txt:'Fais 4 backflips 720',        n:4,  reward:40, ev:'backflip'},
+    {id:'back4',   txt:'Fais 4 méga-tricks (réponse éclair)', n:4, reward:40, ev:'backflip'},
     {id:'combo5',  txt:'Atteins un combo de 5',       n:5,  reward:40, ev:'combo', mode:'max'},
     {id:'perfect', txt:'Fais une descente parfaite',  n:1,  reward:60, ev:'perfect'},
     {id:'runs3',   txt:'Termine 3 descentes',         n:3,  reward:25, ev:'run'},

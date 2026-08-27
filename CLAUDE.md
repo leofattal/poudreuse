@@ -13,7 +13,9 @@ index.html          markup (screens + HUD) + <script>/<link> includes
 css/styles.css      all styles; design tokens are CSS vars in :root
 js/
   data.js       save storage (Store), player state P, persist(), mergeCloudSave,
-                verb engine (conjugate), MOUNTAINS (6 levels, ids 0-5), BOARDS
+                verb engine (conjugate + passeCompose), MOUNTAINS (9 pistes,
+                ids 0-8, array in unlock order ≠ id order — look up via MTN(id)),
+                BOARDS, OUTFITS, BOOSTS
   audio.js      Sfx — procedural Web Audio sound effects
   ui.js         UI screens (menu/mountains/shop/settings/leaderboard), Settings,
                 accent strip, answer normalization, escapeHTML
@@ -67,7 +69,8 @@ JS — keep it that way unless you add hashing).
 ## Backend (Supabase)
 
 Project ref **`ikqwsxnczncfhsbmswaz`** (org: leofattal's Org). Three RLS-protected
-tables: `scores` (per-mountain leaderboard, anonymous inserts allowed),
+tables: `scores` (per-mountain leaderboard, anonymous inserts allowed; CHECK
+`mountain_id BETWEEN 0 AND 8` — widen it when adding pistes),
 `profiles` (auto-created on Google login), `saves` (jsonb cloud save of `P`,
 owner-only). Client uses the **publishable anon key** hard-coded in cloud.js —
 that's safe; RLS is the security boundary.
@@ -91,3 +94,11 @@ that's safe; RLS is the security boundary.
 - User-supplied names in the leaderboard are rendered through `escapeHTML` — keep it.
 - Supervised/child Google accounts are blocked by Google from OAuth; only adult
   accounts can sign in. The anonymous leaderboard is the always-works path for kids.
+- **Passé composé questions** need the pronoun *before* conjugating (être-verb
+  agreement): use `passeCompose(v, i, pr)`, which returns `{form, accept}` —
+  `accept` lists all valid spellings (e.g. « suis tombé » and « suis tombée » for
+  je/tu). `current.accept` is what `submit()` checks, `current.form` is displayed.
+- Coins are credited to `runCoins` at answer time; the coin-flight animation is
+  pure decoration (rAF freezes in hidden tabs, so never gate rewards on it).
+- Practice mode (`Game.practice()`) is a pseudo-piste `{id:'practice'}` — it must
+  stay out of `P.best` and the leaderboard (guards in `finish`/`buildSubmit`).
