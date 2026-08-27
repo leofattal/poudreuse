@@ -21,7 +21,9 @@ const World = (() => {
     airY: 0, vy: 0, rot: 0, rotV: 0,
     mode: 'ride',               // ride | air | tumble | recover
     tumbleT: 0, fireTier: 0,
+    squash: 1, lastSpins: 0,    // squash & stretch factor, spins of current jump
   };
+  const embers = [], kickers = [], rings = [], ghosts = [];
 
   function resize(){
     W = cv.width = window.innerWidth * devicePixelRatio;
@@ -53,19 +55,22 @@ const World = (() => {
     return base + Math.sin((x + scroll*2)*.0016) * H*.02 + Math.sin((x + scroll*2)*.0005) * H*.03;
   }
 
-  /* ---- rider drawing (cute vector snowboarder) ---- */
-  function drawRider(px, py){
-    const s = Math.min(W,H) * .00034;   // scale unit
+  /* ---- rider drawing (cute vector snowboarder) ----
+     rot/alpha params let the same art render ghost afterimages */
+  function drawRider(px, py, rot, alpha){
+    rot = rot ?? rider.rot; alpha = alpha ?? 1;
     const board = BOARDS[P.activeBoard] || BOARDS.flamant;
     const fit = OUTFITS[P.activeOutfit] || OUTFITS.givre;
     ctx.save();
+    ctx.globalAlpha = alpha;
     ctx.translate(px, py);
-    ctx.rotate(rider.rot);
+    ctx.rotate(rot);
     const k = Math.max(.7, Math.min(1.4, W/1400)) * devicePixelRatio;
-    ctx.scale(k, k);
+    // squash & stretch: >1 stretches on takeoff, <1 flattens on landing
+    ctx.scale(k * (1 + (1 - rider.squash) * .6), k * rider.squash);
 
     // fire trail glow when on streak — color escalates with combo tier
-    if(rider.fireTier > 0 && rider.mode !== 'tumble'){
+    if(alpha === 1 && rider.fireTier > 0 && rider.mode !== 'tumble'){
       const c = rider.fireTier === 3
         ? `${Math.floor(128+127*Math.sin(t*.15))},${Math.floor(128+127*Math.sin(t*.15+2))},${Math.floor(128+127*Math.sin(t*.15+4))}`
         : FIRE_COLORS[rider.fireTier];
@@ -101,11 +106,16 @@ const World = (() => {
     ctx.beginPath(); ctx.roundRect(-16, -26, 32, 30, 10); ctx.fill();
     ctx.strokeStyle = 'rgba(30,36,71,.25)'; ctx.lineWidth = 2; ctx.stroke();
 
-    // arms
+    // arms — grab the board mid-spin, reach up in a plain jump, wobble on snow
     ctx.strokeStyle = fit.jacket; ctx.lineWidth = 8;
-    const wob = rider.mode === 'air' ? -14 : Math.sin(t*.1)*3;
-    ctx.beginPath(); ctx.moveTo(-14,-18); ctx.lineTo(-30, -6 + wob); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(14,-18); ctx.lineTo(30, -10 + wob); ctx.stroke();
+    if(rider.mode === 'air' && rider.rotV !== 0){
+      ctx.beginPath(); ctx.moveTo(-14,-18); ctx.lineTo(-28, -34); ctx.stroke();  // arm punched skyward
+      ctx.beginPath(); ctx.moveTo(14,-18); ctx.lineTo(22, 16); ctx.stroke();     // indy grab
+    } else {
+      const wob = rider.mode === 'air' ? -14 : Math.sin(t*.1)*3;
+      ctx.beginPath(); ctx.moveTo(-14,-18); ctx.lineTo(-30, -6 + wob); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(14,-18); ctx.lineTo(30, -10 + wob); ctx.stroke();
+    }
 
     // head
     ctx.fillStyle = '#F5C9A8';
@@ -236,24 +246,88 @@ const World = (() => {
     /* ---- rider physics ---- */
     const px = rider.x * W;
     const gy = terrainY(px) - 26*devicePixelRatio;
+    const dpr = devicePixelRatio;
 
     if(rider.mode === 'ride'){
       rider.airY = 0; rider.rot = Math.sin((px + scroll*2)*.0016)*.12 + .06;
       rider.rotV = 0;
+      // carve spray off the tail when moving fast
+      if(speed > 4.5 && t % 3 === 0) spray(px - 26*dpr, gy + 24*dpr, 1);
     } else if(rider.mode === 'air'){
-      rider.vy += .5 * devicePixelRatio;
+      rider.vy += .5 * dpr;
       rider.airY += rider.vy;
       rider.rot += rider.rotV;
-      if(rider.airY >= 0){ rider.airY = 0; rider.mode = 'ride'; rider.rot = 0; spray(px, gy+20, 14); }
+      // afterimages while spinning
+      if(rider.rotV !== 0 && t % 2 === 0)
+        ghosts.push({ x: px, y: gy + rider.airY, rot: rider.rot, life: 11 });
+      if(rider.airY >= 0){                            // touchdown — impact scales with the trick
+        rider.airY = 0; rider.mode = 'ride'; rider.rot = 0;
+        rider.squash = .68 + (2 - rider.lastSpins) * .06;
+        spray(px, gy + 20, 12 + rider.lastSpins * 10);
+        if(rider.lastSpins === 2) rings.push({ x: px, y: gy + 22*dpr, r: 8*dpr, life: 22 });
+      }
     } else if(rider.mode === 'tumble'){
       rider.tumbleT++;
       rider.rot += .3;
-      rider.airY = Math.min(0, rider.airY + rider.vy); rider.vy += .6*devicePixelRatio;
+      rider.airY = Math.min(0, rider.airY + rider.vy); rider.vy += .6*dpr;
       if(rider.tumbleT === 2) spray(px, gy+20, 26);
-      if(rider.tumbleT > 46){ rider.mode = 'ride'; rider.rot = 0; rider.tumbleT = 0; }
+      if(rider.tumbleT % 9 === 0) spray(px + rnd(-20,20)*dpr, gy + 20, 5);   // skidding through snow
+      if(rider.tumbleT > 46){ rider.mode = 'ride'; rider.rot = 0; rider.tumbleT = 0; rider.squash = .8; }
+    }
+    rider.squash += (1 - rider.squash) * .16;         // spring back to normal
+
+    // snow kickers (spawned by jumps, scroll past under the rider)
+    for(let i = kickers.length-1; i >= 0; i--){
+      const kk = kickers[i];
+      const kx = kk.x - (scroll - kk.s0);
+      if(kx < -120*dpr){ kickers.splice(i,1); continue; }
+      const ky = terrainY(kx) + 6*dpr;
+      ctx.fillStyle = '#FFFFFF';
+      ctx.beginPath(); ctx.moveTo(kx - 52*dpr, ky); ctx.lineTo(kx + 26*dpr, ky - 30*dpr); ctx.lineTo(kx + 32*dpr, ky); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(201,216,240,.9)'; ctx.lineWidth = 3*dpr;
+      ctx.beginPath(); ctx.moveTo(kx - 52*dpr, ky); ctx.lineTo(kx + 26*dpr, ky - 30*dpr); ctx.stroke();
+    }
+
+    // fire embers streaming off the board on a combo
+    if(rider.fireTier > 0 && rider.mode !== 'tumble'){
+      for(let e = 0; e < rider.fireTier; e++) embers.push({
+        x: px - 26*dpr + rnd(-8,8)*dpr, y: gy + rider.airY + 20*dpr + rnd(-4,4)*dpr,
+        vx: -(speed + rnd(0,3))*dpr, vy: rnd(-1.8,.4)*dpr,
+        r: rnd(2,5.5)*dpr, life: rnd(12,26), tier: rider.fireTier,
+      });
+    }
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for(let i = embers.length-1; i >= 0; i--){
+      const e = embers[i];
+      e.x += e.vx; e.y += e.vy; e.life--; e.r *= .95;
+      const c = e.tier === 3 ? `${Math.floor(128+127*Math.sin(t*.15))},${Math.floor(128+127*Math.sin(t*.15+2))},${Math.floor(128+127*Math.sin(t*.15+4))}`
+                             : FIRE_COLORS[e.tier];
+      ctx.fillStyle = `rgba(${c},${Math.min(1, e.life/16)*.7})`;
+      ctx.beginPath(); ctx.arc(e.x, e.y, Math.max(.5, e.r), 0, 7); ctx.fill();
+      if(e.life <= 0) embers.splice(i,1);
+    }
+    ctx.restore();
+
+    // spin afterimages fade behind the rider
+    for(let i = ghosts.length-1; i >= 0; i--){
+      const g = ghosts[i];
+      g.life--;
+      if(g.life <= 0){ ghosts.splice(i,1); continue; }
+      drawRider(g.x - (11 - g.life)*3*dpr, g.y, g.rot, g.life/11 * .22);
     }
 
     drawRider(px, gy + rider.airY);
+
+    // landing shockwave rings (backflip touchdowns)
+    for(let i = rings.length-1; i >= 0; i--){
+      const rg = rings[i];
+      rg.r += 5*dpr; rg.life--;
+      ctx.strokeStyle = `rgba(255,255,255,${rg.life/22*.8})`;
+      ctx.lineWidth = 3*dpr;
+      ctx.beginPath(); ctx.ellipse(rg.x, rg.y, rg.r, rg.r*.32, 0, 0, 7); ctx.stroke();
+      if(rg.life <= 0) rings.splice(i,1);
+    }
 
     // speed lines when fast / on fire
     if(speed > 5){
@@ -351,11 +425,17 @@ const World = (() => {
 
   function jump(spins){        // spins: 0 = ollie, 1 = 360, 2 = backflip 720
     rider.mode = 'air';
+    rider.lastSpins = spins;
+    rider.squash = 1.28;                              // stretch off the lip
     rider.vy = -(11 + spins*2.5) * devicePixelRatio;
     rider.rotV = spins === 0 ? 0 : (spins === 1 ? .17 : .3) * (Math.random()<.5?-1:1);
+    kickers.push({ x: rider.x*W + 30*devicePixelRatio, s0: scroll });
     spray(rider.x*W, terrainY(rider.x*W), 10);
   }
-  function tumble(){ rider.mode = 'tumble'; rider.vy = -4*devicePixelRatio; rider.tumbleT = 0; shakeI = 22; }
+  function tumble(){
+    rider.mode = 'tumble'; rider.vy = -4*devicePixelRatio; rider.tumbleT = 0;
+    rider.squash = 1; ghosts.length = 0; shakeI = 22;
+  }
   function setFire(tier){ rider.fireTier = tier; }
   function setSpeed(v){ speed = v; }
   function shake(v){ shakeI = Math.max(shakeI, v); }

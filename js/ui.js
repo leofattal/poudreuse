@@ -200,6 +200,43 @@ const Settings = {
   toggle(k){ P.settings[k] = !P.settings[k]; persist(); Settings.sync(); Sfx.click(); },
 };
 
+/* ---------------- DOM particle burst (for screens where the canvas is hidden) ---------------- */
+function domBurst(el, emoji, n){
+  const r = el.getBoundingClientRect();
+  const cx = r.left + r.width/2, cy = r.top + r.height/2;
+  for(let i = 0; i < n; i++){
+    const sp = document.createElement('span');
+    sp.className = 'fx-part';
+    sp.textContent = emoji;
+    const a = Math.random() * Math.PI * 2, d = 60 + Math.random() * 130;
+    sp.style.left = cx + 'px'; sp.style.top = cy + 'px';
+    sp.style.setProperty('--dx', Math.cos(a) * d + 'px');
+    sp.style.setProperty('--dy', Math.sin(a) * d - 40 + 'px');
+    sp.style.setProperty('--rr', (Math.random() * 520 - 260) + 'deg');
+    sp.style.fontSize = 14 + Math.random() * 14 + 'px';
+    sp.style.animationDelay = Math.random() * .12 + 's';
+    document.body.appendChild(sp);
+    setTimeout(() => sp.remove(), 1300);
+  }
+}
+
+/* ---------------- Menu snowfall (the canvas only lives on the game screen) ---------------- */
+(() => {
+  const menu = document.getElementById('menu');
+  const box = document.createElement('div');
+  box.className = 'menu-snow';
+  for(let i = 0; i < 14; i++){
+    const f = document.createElement('span');
+    f.textContent = '❄';
+    f.style.left = Math.random() * 100 + '%';
+    f.style.fontSize = 8 + Math.random() * 14 + 'px';
+    f.style.animationDuration = 7 + Math.random() * 9 + 's';
+    f.style.animationDelay = -Math.random() * 16 + 's';
+    box.appendChild(f);
+  }
+  menu.prepend(box);
+})();
+
 /* small HTML escaper for user-supplied names shown in the leaderboard */
 function escapeHTML(s){
   return String(s == null ? '' : s).replace(/[&<>"']/g, c =>

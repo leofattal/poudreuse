@@ -86,9 +86,14 @@ const Game = (() => {
   function countdown(n){
     const cd = $('countdown');
     cd.classList.add('show');
+    const pop = txt => {                             // re-trigger the pop animation per digit
+      cd.textContent = txt;
+      cd.classList.remove('pop'); void cd.offsetWidth;
+      cd.classList.add('pop');
+    };
     const step = k => {
-      if(k === 0){ cd.textContent = 'GO !'; Sfx.fire(); setTimeout(()=>{ cd.classList.remove('show'); nextJump(); }, 550); return; }
-      cd.textContent = k; Sfx.tick();
+      if(k === 0){ pop('GO !'); Sfx.fire(); setTimeout(()=>{ cd.classList.remove('show'); nextJump(); }, 550); return; }
+      pop(k); Sfx.tick();
       setTimeout(()=>step(k-1), 700);
     };
     step(n);
@@ -206,17 +211,17 @@ const Game = (() => {
         World.confetti(16, .3, .5);
         showBurst('BOUCLIER ! 🛡️', 'combo sauvé');
         Sfx.golden();
+        // still land a clean (pointless) trick — the shield absorbed the fall
+        const elapsed = clockMs - Math.max(0, deadline - performance.now());
+        const frac = Math.min(1, elapsed / clockMs);
+        World.jump(timedOut ? 0 : (frac < .35 ? 2 : frac < .7 ? 1 : 0));
       } else {
         streak = 0; lastTier = 0;
         World.setFire(0); World.setSpeed(3.5);
-        Sfx.miss();
+        World.tumble();                              // 💥 wipeout
+        Sfx.wipe(); Sfx.miss();
         showBurst('RATÉ…', '+0 pts');
       }
-      // still do the trick — timing still decides which — but no points
-      const elapsed = clockMs - Math.max(0, deadline - performance.now());
-      const frac = Math.min(1, elapsed / clockMs);
-      const spins = timedOut ? 0 : (frac < .35 ? 2 : frac < .7 ? 1 : 0);
-      World.jump(spins);
       P.weights[key] = (P.weights[key] || 0) + 1.5;
       misses.push(current);
       const rc = $('reveal-card');
@@ -400,10 +405,9 @@ const Game = (() => {
       $('chestReveal').innerHTML =
         `<div class="chest-reveal rar-${chest.rar}">${chest.label} · +${chest.coins} 🪙</div>`;
       Sfx.chestOpen(chest.rar);
-      if(chest.rar === 'epique' || chest.rar === 'legendaire'){
-        World.confetti(chest.rar === 'legendaire' ? 90 : 45, .5, .5);
-        World.shake(chest.rar === 'legendaire' ? 16 : 8);
-      }
+      const n = { commun:8, rare:12, epique:18, legendaire:26 }[chest.rar] || 8;
+      domBurst(btn, '🪙', n);
+      if(chest.rar === 'legendaire') domBurst(btn, '✨', 10);
     }, 600);
   }
 
